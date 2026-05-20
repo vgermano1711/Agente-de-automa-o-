@@ -10,6 +10,7 @@
   "leads_por_dia": 5,
   "horario_ciclo": "0 8 * * *",
   "intervalo_agent7_minutos": 5,
+  "canal_padrao": "whatsapp",
   "netlify_site_prefix": "demo-",
   "notificacoes_ativas": true
 }

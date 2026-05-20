@@ -11,12 +11,13 @@ import { dataPath, readJson, writeJson, slugify, today } from '../utils/dataHelp
 
 const client = new Anthropic();
 
+// WhatsApp é o canal padrão para todos — maior taxa de abertura no Brasil
 const CANAL_MAP: Record<string, Diagnostico['canal_recomendado']> = {
-  'salão de beleza': 'instagram',
-  barbearia: 'instagram',
-  'clínica odontológica': 'email',
-  construtora: 'linkedin',
-  'corretor de imóveis': 'linkedin',
+  'salão de beleza': 'whatsapp',
+  barbearia: 'whatsapp',
+  'clínica odontológica': 'whatsapp',
+  construtora: 'whatsapp',
+  'corretor de imóveis': 'whatsapp',
 };
 
 async function diagnoseLead(lead: Lead): Promise<Diagnostico> {
@@ -51,7 +52,7 @@ Retorne APENAS o JSON válido abaixo, sem markdown, sem explicações:
     const parsed = JSON.parse(text);
 
     const canalRecomendado: Diagnostico['canal_recomendado'] =
-      CANAL_MAP[lead.categoria] || 'instagram';
+      CANAL_MAP[lead.categoria] || 'whatsapp';
 
     return {
       lead_id: lead.id,
@@ -87,7 +88,7 @@ function mockDiagnostico(lead: Lead): Diagnostico {
     problema_principal: `${lead.nome} não tem presença digital adequada e perde clientes para concorrentes com site`,
     angulo_de_venda: `Clientes em ${lead.cidade} buscam ${lead.categoria} no Google e não encontram ${lead.nome}`,
     tom_da_abordagem: canal === 'linkedin' ? 'consultivo' : 'amigável e local',
-    canal_recomendado: canal,
+    canal_recomendado: 'whatsapp',
     proposta_de_valor: `Uma landing page profissional pode triplicar os contatos de novos clientes em 30 dias`,
     landing_page_url: null,
     landing_page_path: null,

@@ -129,6 +129,12 @@ function writeEnv(vars) {
     '# CALENDLY',
     `CALENDLY_LINK=${vars.calendly_link || ''}`,
     '',
+    '# WHATSAPP',
+    `WHATSAPP_PROVIDER=${vars.whatsapp_provider || 'zapi'}`,
+    `ZAPI_INSTANCE_ID=${vars.zapi_instance_id || ''}`,
+    `ZAPI_TOKEN=${vars.zapi_token || ''}`,
+    `ZAPI_CLIENT_TOKEN=${vars.zapi_client_token || ''}`,
+    '',
     '# SISTEMA',
     `OWNER_EMAIL=${vars.owner_email || vars.gmail_user || ''}`,
     `APPROVAL_PANEL_URL=http://localhost:3000`,
@@ -180,8 +186,34 @@ async function main() {
   }
   print(green('  ✓ Chave Anthropic aceita'));
 
-  // ── 2. Google Places ──────────────────────────────────────────────────────
-  section('2. Google Places API Key (para prospecção real)');
+  // ── 2. WhatsApp ───────────────────────────────────────────────────────────
+  section('2. WhatsApp — canal principal de envio');
+  print(dim('  Escolha como quer enviar as mensagens:'));
+  print('');
+  print('  ' + bold('A) Z-API') + dim(' — recomendado. Pago (~R$97/mês), sem celular preso.'));
+  print('     Criar em: ' + cyan('app.z-api.io'));
+  print('');
+  print('  ' + bold('B) whatsapp-web.js') + dim(' — gratuito. Escaneia QR code no terminal.'));
+  print('     Requer: celular com WhatsApp conectado ao computador.'));
+  print('');
+  const whatsapp_provider_choice = await ask('Escolha (A para Z-API / B para gratuito):', 'A');
+  const whatsapp_provider = whatsapp_provider_choice.toUpperCase() === 'B' ? 'wwebjs' : 'zapi';
+
+  let zapi_instance_id = '', zapi_token = '', zapi_client_token = '';
+  if (whatsapp_provider === 'zapi') {
+    print(dim('  No app.z-api.io: crie uma instância → conecte seu WhatsApp → copie os dados abaixo'));
+    print('');
+    zapi_instance_id = await ask('ZAPI_INSTANCE_ID (Enter para pular):');
+    zapi_token = await ask('ZAPI_TOKEN (Enter para pular):');
+    zapi_client_token = await ask('ZAPI_CLIENT_TOKEN (Enter para pular):');
+    if (zapi_instance_id && zapi_token) print(green('  ✓ Z-API configurado'));
+    else print(yellow('  → Pulado — WhatsApp rodará em modo simulação'));
+  } else {
+    print(green('  ✓ whatsapp-web.js selecionado — QR code aparecerá ao iniciar o sistema'));
+  }
+
+  // ── 3. Google Places ──────────────────────────────────────────────────────
+  section('3. Google Places API Key (para prospecção real)');
   print(dim('  Obter em: console.cloud.google.com → APIs → Places API → Credentials'));
   print(dim('  Sem ela o sistema usa dados mock (ótimo para testar)'));
   print('');
@@ -189,8 +221,8 @@ async function main() {
   if (places_key) print(green('  ✓ Google Places configurado'));
   else print(yellow('  → Pulado — sistema usará dados mock'));
 
-  // ── 3. Gmail ──────────────────────────────────────────────────────────────
-  section('3. Gmail (para envio de emails)');
+  // ── 4. Gmail ──────────────────────────────────────────────────────────────
+  section('4. Gmail (para monitorar respostas — opcional)');
   print(dim('  Precisa de: seu email + uma "Senha de app" do Google'));
   print(dim('  Passos: conta.google.com → Segurança → Verificação em 2 etapas → Senhas de app'));
   print('');
@@ -204,16 +236,16 @@ async function main() {
     print(yellow('  → Pulado — envio de email não funcionará'));
   }
 
-  // ── 4. Netlify ────────────────────────────────────────────────────────────
-  section('4. Netlify (deploy automático das landing pages)');
+  // ── 5. Netlify ────────────────────────────────────────────────────────────
+  section('5. Netlify (deploy automático das landing pages)');
   print(dim('  Obter em: app.netlify.com → User Settings → Applications → New access token'));
   print('');
   const netlify_token = await ask('Cole seu NETLIFY_AUTH_TOKEN (Enter para pular):');
   if (netlify_token) print(green('  ✓ Netlify configurado — landing pages farão deploy automático'));
   else print(yellow('  → Pulado — LPs serão servidas localmente em localhost:3000'));
 
-  // ── 5. Pushover ───────────────────────────────────────────────────────────
-  section('5. Pushover (notificações no celular) — opcional');
+  // ── 6. Pushover ───────────────────────────────────────────────────────────
+  section('6. Pushover (notificações no celular) — opcional');
   print(dim('  Criar em: pushover.net — plano gratuito por 30 dias, depois $5 único'));
   print('');
   const wantsPushover = await ask('Quer configurar notificações Pushover? (s/n)', 'n');
@@ -226,14 +258,14 @@ async function main() {
     print(dim('  → Pulado — notificações serão por email'));
   }
 
-  // ── 6. Calendly ───────────────────────────────────────────────────────────
-  section('6. Calendly (para Agente 7 propor horários) — opcional');
+  // ── 7. Calendly ───────────────────────────────────────────────────────────
+  section('7. Calendly (para Agente 7 propor horários) — opcional');
   print(dim('  Se tiver conta, cole seu link pessoal (ex: calendly.com/seu-nome/30min)'));
   print('');
   const calendly_link = await ask('Link do Calendly (Enter para pular):');
 
-  // ── 7. Configurações gerais ───────────────────────────────────────────────
-  section('7. Configurações gerais');
+  // ── 8. Configurações gerais ───────────────────────────────────────────────
+  section('8. Configurações gerais');
   const owner_email = await ask('Seu email (para notificações de fallback):', gmail_user || '');
   const notif = (!pushover_token && !gmail_pass) ? 'false' : 'true';
 
@@ -243,6 +275,7 @@ async function main() {
     google_client_id: '', google_client_secret: '', google_refresh_token: '',
     netlify_token, pushover_token, pushover_user, calendly_link,
     owner_email, notificacoes: notif,
+    whatsapp_provider, zapi_instance_id, zapi_token, zapi_client_token,
   });
 
   // ── Instalar dependências ─────────────────────────────────────────────────

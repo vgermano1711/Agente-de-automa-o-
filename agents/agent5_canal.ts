@@ -13,6 +13,16 @@ import { dataPath, readJson, writeJson, generateId, today } from '../utils/dataH
 const client = new Anthropic();
 
 const CHANNEL_PROMPTS: Record<string, string> = {
+  whatsapp: `Gere uma mensagem de WhatsApp de prospecção fria. Regras OBRIGATÓRIAS:
+- Máximo 4 linhas curtas — WhatsApp longo não é lido
+- Comece com "Oi [nome do negócio]!" de forma natural
+- Linha 2: mencione o problema específico deles em 1 frase
+- Linha 3: proposta de valor + link da landing page
+- Linha 4: CTA curto ("Me fala o que achou!" ou "Posso te mostrar como ficaria?")
+- Tom: conversa de pessoa para pessoa, NUNCA corporativo
+- Pode usar 1-2 emojis no máximo, com naturalidade
+- NÃO use asteriscos para negrito, NÃO use listas`,
+
   email: `Gere um email de prospecção frio com:
 - Assunto: impactante, curioso, sem spam (máx 60 chars)
 - Corpo: 3 parágrafos curtos. Parágrafo 1: abertura direta mencionando o negócio pelo nome e a cidade. Parágrafo 2: problema específico e a solução (a landing page). Parágrafo 3: CTA claro com o link.
@@ -121,6 +131,7 @@ function mockMessage(diag: Diagnostico, landingUrl: string, videoPath: string): 
   const fs = require('fs');
 
   const corpos: Record<string, string> = {
+    whatsapp: `Oi, ${diag.nome}! 👋\nVi vocês no Google — reputação ótima, mas quem busca ${diag.categoria} em ${diag.cidade} agora não te encontra online.\nMontei uma prévia do que poderia ser o site de vocês: ${landingUrl}\nMe fala o que achou!`,
     email: `Oi, tudo bem?\n\nVi o ${diag.nome} no Google e fiquei impressionado com as avaliações — reputação assim é difícil de construir. Só que percebi uma coisa: quando alguém busca ${diag.categoria} em ${diag.cidade}, não consegue te encontrar direito online.\n\nMontei uma prévia de como sua presença digital poderia ficar: ${landingUrl}\n\nSe curtir, posso deixar isso no ar pra você em menos de 24h. Sem enrolação.`,
     sms: `Oi! Montei uma prévia de site para o ${diag.nome}. Dá uma olhada: ${landingUrl} — posso te mostrar como isso pode trazer mais clientes.`,
     instagram: `Oi! Vi o ${diag.nome} aqui no Google — incrível as avaliações! Montei uma prévia de site pra vocês, dá uma olhada: ${landingUrl} 🚀`,

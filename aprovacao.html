@@ -72,6 +72,7 @@
     .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     .card-header h3 { font-size: 1rem; font-weight: 600; }
     .canal-badge { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .canal-whatsapp { background: #25d366; color: #fff; }
     .canal-email { background: #1d4ed8; color: #fff; }
     .canal-instagram { background: #9333ea; color: #fff; }
     .canal-linkedin { background: #0369a1; color: #fff; }
@@ -237,13 +238,13 @@ const MOCK_MESSAGES = [
     id: 'msg_demo_001',
     lead_id: 'lead_1',
     nome_negocio: 'Salão da Dona Maria',
-    canal: 'instagram',
-    corpo: 'Oi, Maria! Vi o Salão da Dona Maria aqui no Google Maps — que avaliações incríveis, viu? 🌟\n\nTinha uma coisa que queria te mostrar: montei uma prévia de página profissional pro salão. Dá uma olhada, ficou bem caprichado:\nhttps://demo-salao-da-dona-maria.netlify.app\n\nSe gostar, posso colocar no ar de verdade em menos de 24h.',
+    canal: 'whatsapp',
+    corpo: 'Oi, Salão da Dona Maria! 👋\nVi vocês no Google — 4.2 estrelas é difícil de conseguir. Só que quem busca salão de beleza em São Paulo agora não te encontra online.\nMontei uma prévia do que poderia ser o site de vocês: https://demo-salao-da-dona-maria.netlify.app\nMe fala o que achou!',
     landing_page_url: null,
     video_path: null,
     status: 'aprovacao_pendente',
-    revisao_score: 92,
-    revisao_notas: 'Aprovado na revisão automática. Tom casual, nome do negócio presente.',
+    revisao_score: 95,
+    revisao_notas: 'Aprovado. Tom casual, curto, nome presente, CTA direto.',
     data_criacao: new Date().toISOString(),
     slug: 'salao-da-dona-maria'
   },
@@ -251,14 +252,13 @@ const MOCK_MESSAGES = [
     id: 'msg_demo_002',
     lead_id: 'lead_2',
     nome_negocio: 'Construtora Horizonte',
-    canal: 'linkedin',
-    assunto: null,
-    corpo: 'Olá!\n\nAnalisando construtoras em Campinas, a Construtora Horizonte chamou atenção pelo volume de avaliações positivas — reputação assim vale ouro no setor.\n\nO que percebi: quem busca "construtora em Campinas" no Google dificilmente encontra a empresa online. Preparei uma demonstração gratuita de como uma landing page profissional poderia representar em novos contratos:\nhttps://demo-construtora-horizonte.netlify.app\n\nFaria sentido conversar sobre isso?',
+    canal: 'whatsapp',
+    corpo: 'Oi, Construtora Horizonte! 👋\n81 avaliações no Google e nenhuma página própria para capturar quem pesquisa "construtora em Campinas" agora.\nFiz uma demonstração de como ficaria: https://demo-construtora-horizonte.netlify.app\nFaz sentido conversar?',
     landing_page_url: null,
     video_path: null,
     status: 'aprovacao_pendente',
-    revisao_score: 88,
-    revisao_notas: 'Revisado — tom ajustado para LinkedIn. Score: 88/100',
+    revisao_score: 95,
+    revisao_notas: 'Aprovado. Mensagem curta e direta para WhatsApp.',
     data_criacao: new Date().toISOString(),
     slug: 'construtora-horizonte'
   },
@@ -266,14 +266,13 @@ const MOCK_MESSAGES = [
     id: 'msg_demo_003',
     lead_id: 'lead_3',
     nome_negocio: 'Clínica Sorria Mais',
-    canal: 'email',
-    assunto: 'Vi a Clínica Sorria Mais no Google — tenho algo pra mostrar',
-    corpo: 'Oi!\n\nSearquei clínicas odontológicas em Campinas e a Clínica Sorria Mais apareceu com uma reputação excelente no Google — pacientes satisfeitos, ótimas avaliações.\n\nO detalhe: quando alguém busca "dentista em Campinas" agora, a clínica quase não aparece online. Montei uma prévia do que a presença digital de vocês poderia ser:\nhttps://demo-clinica-sorria-mais.netlify.app\n\nSe curtir, coloco no ar em 24h. Sem compromisso.',
+    canal: 'whatsapp',
+    corpo: 'Oi, Clínica Sorria Mais! 👋\n69 avaliações positivas no Google mas quem busca dentista em Campinas agora não chega até vocês.\nMontei uma prévia do que poderia ser a página de vocês: https://demo-clinica-sorria-mais.netlify.app\nMe fala o que acharam!',
     landing_page_url: null,
     video_path: null,
     status: 'aprovacao_pendente',
     revisao_score: 95,
-    revisao_notas: 'Aprovado na revisão automática sem alterações',
+    revisao_notas: 'Aprovado na revisão automática sem alterações.',
     data_criacao: new Date().toISOString(),
     slug: 'clinica-sorria-mais'
   }
@@ -435,7 +434,7 @@ function renderCard(msg) {
       </div>
     </div>
     <div class="card-actions">
-      <button class="btn btn-approve" id="btn-approve-${msg.id}" onclick="aprovar('${msg.id}')">✅ Aprovar e Enviar</button>
+      <button class="btn btn-approve" id="btn-approve-${msg.id}" onclick="aprovar('${msg.id}')">${msg.canal === 'whatsapp' ? '✅ Aprovar e Enviar WhatsApp' : '✅ Aprovar e Enviar'}</button>
       <button class="btn btn-edit" id="btn-edit-${msg.id}" onclick="toggleEdit('${msg.id}')">✏️ Editar</button>
       <button class="btn btn-save" id="btn-save-${msg.id}" style="display:none" onclick="saveEdit('${msg.id}', '${msg.canal}')">💾 Salvar</button>
       <button class="btn btn-reject" onclick="rejeitar('${msg.id}')">❌ Rejeitar</button>

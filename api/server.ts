@@ -13,6 +13,7 @@ import { google } from 'googleapis';
 import { Mensagem, RespostaLead } from '../types';
 import { log } from '../utils/logger';
 import { notifyOwner } from '../utils/notifications';
+import { sendWhatsApp } from '../utils/whatsapp';
 
 const app = express();
 app.use(cors());
@@ -155,11 +156,23 @@ app.post('/api/aprovar/:id', async (req, res) => {
     return res.status(400).json({ error: 'Mensagem não está pendente de aprovação' });
   }
 
+  // Pegar o telefone do lead do arquivo de diagnósticos
+  const today = new Date().toISOString().slice(0, 10);
+  const diagFile = path.join(process.cwd(), 'data', `diagnosticos_${today}.json`);
+  let telefone = '';
+  if (fs.existsSync(diagFile)) {
+    const diags = JSON.parse(fs.readFileSync(diagFile, 'utf-8'));
+    const diag = diags.find((d: { slug: string; telefone: string }) => d.slug === msg.slug);
+    if (diag) telefone = diag.telefone;
+  }
+
   try {
-    if (msg.canal === 'email') {
+    if (msg.canal === 'whatsapp') {
+      await sendWhatsApp(telefone, msg.corpo);
+    } else if (msg.canal === 'email') {
       await sendEmail(msg);
     } else {
-      log.info(`Canal ${msg.canal} — registrando aprovação (envio manual necessário para ${msg.canal})`);
+      log.info(`Canal ${msg.canal} — registrando aprovação (envio manual necessário)`);
     }
 
     msgs[idx].status = 'enviado';
@@ -167,11 +180,11 @@ app.post('/api/aprovar/:id', async (req, res) => {
     writeMessages(msgs);
 
     await notifyOwner(
-      `✅ Mensagem para ${msg.nome_negocio} aprovada e ${msg.canal === 'email' ? 'enviada' : 'marcada para envio manual'}`,
-      'Aprovação confirmada'
+      `✅ WhatsApp enviado para ${msg.nome_negocio} (${telefone || 'número não encontrado'})`,
+      'Mensagem enviada'
     );
 
-    log.success(`Mensagem ${msg.id} aprovada — ${msg.nome_negocio}`);
+    log.success(`Mensagem ${msg.id} aprovada e enviada — ${msg.nome_negocio}`);
     res.json({ success: true, message: 'Aprovado e enviado', id: msg.id });
   } catch (err) {
     log.error(`Envio falhou: ${(err as Error).message}`);

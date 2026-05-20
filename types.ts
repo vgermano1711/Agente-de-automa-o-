@@ -23,7 +23,7 @@ export interface Diagnostico {
   problema_principal: string;
   angulo_de_venda: string;
   tom_da_abordagem: string;
-  canal_recomendado: 'email' | 'sms' | 'instagram' | 'linkedin';
+  canal_recomendado: 'whatsapp' | 'email' | 'sms' | 'instagram' | 'linkedin';
   proposta_de_valor: string;
   landing_page_url: string | null;
   landing_page_path: string | null;
@@ -34,7 +34,7 @@ export interface Mensagem {
   id: string;
   lead_id: string;
   nome_negocio: string;
-  canal: 'email' | 'sms' | 'instagram' | 'linkedin';
+  canal: 'whatsapp' | 'email' | 'sms' | 'instagram' | 'linkedin';
   assunto?: string;
   corpo: string;
   landing_page_url: string;
