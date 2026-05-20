@@ -84,7 +84,8 @@ ${canal === 'email' ? 'Retorne JSON: {"assunto": "...", "corpo": "..."}' : 'Reto
 
     if (canal === 'email') {
       try {
-        const parsed = JSON.parse(text);
+        const jsonText = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+        const parsed = JSON.parse(jsonText);
         assunto = parsed.assunto;
         corpo = parsed.corpo;
       } catch {
