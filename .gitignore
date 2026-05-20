@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+data/
+logs/
+pages/
+videos/
+pipeline_state.json
+*.mp4
+*.log

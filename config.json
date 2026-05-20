@@ -1,0 +1,15 @@
+{
+  "cidades_alvo": ["São Paulo, SP", "Campinas, SP", "Curitiba, PR"],
+  "segmentos": [
+    "salão de beleza",
+    "barbearia",
+    "clínica odontológica",
+    "construtora",
+    "corretor de imóveis"
+  ],
+  "leads_por_dia": 5,
+  "horario_ciclo": "0 8 * * *",
+  "intervalo_agent7_minutos": 5,
+  "netlify_site_prefix": "demo-",
+  "notificacoes_ativas": true
+}

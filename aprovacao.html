@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Bot — Painel de Aprovação</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --border: #2a2d3e;
+      --accent: #6c63ff;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+    .badge { background: var(--accent); color: #fff; border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; font-weight: 600; }
+    .status-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; background: var(--surface); }
+    .tab { padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); font-size: 0.9rem; transition: all .2s; }
+    .tab.active { border-bottom-color: var(--accent); color: var(--text); }
+    .tab:hover { color: var(--text); }
+
+    main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+    .empty-state svg { width: 64px; height: 64px; opacity: .3; margin-bottom: 16px; }
+    .empty-state p { font-size: 1.1rem; }
+
+    .cards-grid { display: grid; gap: 20px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-header h3 { font-size: 1rem; font-weight: 600; }
+    .canal-badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .canal-email { background: #1d4ed8; color: #fff; }
+    .canal-instagram { background: #9333ea; color: #fff; }
+    .canal-linkedin { background: #0369a1; color: #fff; }
+    .canal-sms { background: #047857; color: #fff; }
+
+    .card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    @media (max-width: 900px) { .card-body { grid-template-columns: 1fr; } }
+
+    .card-preview {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+    }
+    .preview-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+    .lp-iframe { width: 100%; height: 300px; border: 1px solid var(--border); border-radius: 8px; }
+    .video-preview { width: 100%; border-radius: 8px; background: #000; max-height: 200px; }
+
+    .card-message { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .msg-subject { font-size: 0.85rem; color: var(--muted); }
+    .msg-subject span { color: var(--text); font-weight: 500; }
+    .msg-body {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      flex: 1;
+      min-height: 120px;
+    }
+    .msg-body[contenteditable="true"] { outline: 1px solid var(--accent); }
+
+    .score-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+    }
+    .score-fill {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .score-fill-inner { height: 100%; border-radius: 3px; transition: width .5s; }
+
+    .card-actions {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-approve { background: var(--green); color: #fff; }
+    .btn-edit { background: var(--yellow); color: #000; }
+    .btn-reject { background: var(--red); color: #fff; }
+    .btn-save { background: var(--accent); color: #fff; display: none; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .3s;
+      z-index: 9999;
+      max-width: 320px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 4px solid var(--green); }
+    .toast.error { border-left: 4px solid var(--red); }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    .respostas-list { display: grid; gap: 16px; }
+    .resposta-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .resposta-from { font-weight: 600; margin-bottom: 4px; }
+    .resposta-body { background: #0d1117; border-radius: 6px; padding: 10px; font-size: 0.85rem; color: var(--muted); white-space: pre-wrap; margin: 10px 0; max-height: 100px; overflow-y: auto; }
+    .resposta-draft { background: #0d1117; border: 1px solid var(--accent); border-radius: 6px; padding: 10px; font-size: 0.85rem; white-space: pre-wrap; margin: 10px 0; }
+    .horarios { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+    .horario-chip { background: var(--border); border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">🤖 Sales Bot</div>
+  <div>
+    <span class="status-dot"></span>
+    <span id="status-text">Carregando...</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('aprovacao')">Aprovações</div>
+  <div class="tab" onclick="showTab('respostas')">Respostas de Leads</div>
+  <div class="tab" onclick="showTab('relatorio')">Relatório</div>
+</div>
+
+<main>
+  <!-- Estatísticas -->
+  <div class="stat-grid" id="stats">
+    <div class="stat-card"><div class="stat-value" id="stat-pendentes">—</div><div class="stat-label">Pendentes</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-enviadas">—</div><div class="stat-label">Enviadas</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-respostas">—</div><div class="stat-label">Respostas</div></div>
+  </div>
+
+  <!-- Tab Aprovações -->
+  <div id="tab-aprovacao">
+    <div class="cards-grid" id="cards-container">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <p>Carregando mensagens...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Respostas -->
+  <div id="tab-respostas" style="display:none">
+    <div class="respostas-list" id="respostas-container">
+      <div class="empty-state"><p>Carregando respostas...</p></div>
+    </div>
+  </div>
+
+  <!-- Tab Relatório -->
+  <div id="tab-relatorio" style="display:none">
+    <pre id="relatorio-content" style="background:var(--surface);padding:20px;border-radius:10px;font-size:0.85rem;overflow-x:auto;border:1px solid var(--border)">Carregando relatório...</pre>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let editingId = null;
+
+  function showTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    ['aprovacao', 'respostas', 'relatorio'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    });
+    if (tab === 'respostas') loadRespostas();
+    if (tab === 'relatorio') loadRelatorio();
+  }
+
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type} show`;
+    setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  function scoreColor(score) {
+    if (score >= 85) return '#22c55e';
+    if (score >= 70) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  function canalBadge(canal) {
+    return `<span class="canal-badge canal-${canal}">${canal}</span>`;
+  }
+
+  function renderCard(msg) {
+    const score = msg.revisao_score || 75;
+    const hasVideo = msg.video_path;
+    const lpUrl = msg.landing_page_url || '';
+
+    return `
+    <div class="card" id="card-${msg.id}">
+      <div class="card-header">
+        <div>
+          <h3>${msg.nome_negocio}</h3>
+          <small style="color:var(--muted)">${msg.slug}</small>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${canalBadge(msg.canal)}
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-preview">
+          <div>
+            <div class="preview-label">Landing Page</div>
+            ${lpUrl ? `<iframe class="lp-iframe" src="${lpUrl}" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>` : '<div style="height:300px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;border:1px solid var(--border);border-radius:8px">URL não disponível</div>'}
+          </div>
+          ${hasVideo ? `<div><div class="preview-label">Prévia do Vídeo</div><video class="video-preview" src="/videos/${msg.slug}.mp4" controls muted preload="metadata"></video></div>` : ''}
+        </div>
+        <div class="card-message">
+          ${msg.canal === 'email' && msg.assunto ? `<div class="msg-subject"><strong>Assunto:</strong> <span id="subj-${msg.id}">${msg.assunto}</span></div>` : ''}
+          <div class="preview-label">Mensagem</div>
+          <div class="msg-body" id="body-${msg.id}">${escapeHtml(msg.corpo)}</div>
+          <div class="score-bar">
+            <span style="color:var(--muted);font-size:.75rem">Score IA:</span>
+            <div class="score-fill"><div class="score-fill-inner" style="width:${score}%;background:${scoreColor(score)}"></div></div>
+            <span style="font-weight:700;color:${scoreColor(score)}">${score}</span>
+          </div>
+          ${msg.revisao_notas ? `<small style="color:var(--muted);font-size:.75rem">${msg.revisao_notas}</small>` : ''}
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-approve" onclick="aprovar('${msg.id}')">✅ Aprovar e Enviar</button>
+        <button class="btn btn-edit" id="edit-btn-${msg.id}" onclick="toggleEdit('${msg.id}', '${msg.canal}')">✏️ Editar</button>
+        <button class="btn btn-save" id="save-btn-${msg.id}" onclick="saveEdit('${msg.id}', '${msg.canal}')">💾 Salvar</button>
+        <button class="btn btn-reject" onclick="rejeitar('${msg.id}')">❌ Rejeitar</button>
+      </div>
+    </div>`;
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function toggleEdit(id, canal) {
+    const bodyEl = document.getElementById('body-' + id);
+    const editBtn = document.getElementById('edit-btn-' + id);
+    const saveBtn = document.getElementById('save-btn-' + id);
+    const isEditing = bodyEl.contentEditable === 'true';
+    bodyEl.contentEditable = isEditing ? 'false' : 'true';
+    editBtn.style.display = isEditing ? 'inline-block' : 'none';
+    saveBtn.style.display = isEditing ? 'none' : 'inline-block';
+    if (!isEditing) bodyEl.focus();
+  }
+
+  async function saveEdit(id, canal) {
+    const bodyEl = document.getElementById('body-' + id);
+    const subjEl = document.getElementById('subj-' + id);
+    const corpo = bodyEl.innerText;
+    const assunto = subjEl ? subjEl.innerText : undefined;
+
+    const res = await fetch(`/api/editar/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ corpo, ...(assunto ? { assunto } : {}) }),
+    });
+
+    if (res.ok) {
+      toast('✓ Mensagem salva');
+      toggleEdit(id, canal);
+    } else {
+      toast('Erro ao salvar', 'error');
+    }
+  }
+
+  async function aprovar(id) {
+    const card = document.getElementById('card-' + id);
+    const btns = card.querySelectorAll('.btn');
+    btns.forEach(b => b.disabled = true);
+
+    const res = await fetch(`/api/aprovar/${id}`, { method: 'POST' });
+    if (res.ok) {
+      toast('✅ Aprovado e enviado!');
+      card.style.transition = 'opacity .4s';
+      card.style.opacity = '0';
+      setTimeout(() => card.remove(), 400);
+      loadStats();
+    } else {
+      const err = await res.json();
+      toast('Erro: ' + (err.error || 'Falha'), 'error');
+      btns.forEach(b => b.disabled = false);
+    }
+  }
+
+  async function rejeitar(id) {
+    if (!confirm('Rejeitar esta mensagem?')) return;
+    const res = await fetch(`/api/rejeitar/${id}`, { method: 'POST' });
+    if (res.ok) {
+      toast('Mensagem rejeitada');
+      document.getElementById('card-' + id)?.remove();
+      loadStats();
+    } else {
+      toast('Erro ao rejeitar', 'error');
+    }
+  }
+
+  async function loadMessages() {
+    const container = document.getElementById('cards-container');
+    try {
+      const res = await fetch('/api/mensagens');
+      const msgs = await res.json();
+      if (msgs.length === 0) {
+        container.innerHTML = `<div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <p>Nenhuma mensagem pendente de aprovação</p>
+          <small style="color:var(--muted);margin-top:8px;display:block">O pipeline roda todo dia às 08:00</small>
+        </div>`;
+      } else {
+        container.innerHTML = msgs.map(renderCard).join('');
+      }
+    } catch (e) {
+      container.innerHTML = `<div class="empty-state"><p style="color:var(--red)">Erro ao conectar com a API — servidor rodando?</p></div>`;
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      document.getElementById('stat-pendentes').textContent = data.mensagens_pendentes ?? '—';
+      document.getElementById('stat-enviadas').textContent = data.mensagens_enviadas ?? '—';
+      document.getElementById('status-text').textContent = data.state?.em_execucao ? 'Pipeline em execução' : 'Aguardando próximo ciclo';
+    } catch {}
+  }
+
+  async function loadRespostas() {
+    const container = document.getElementById('respostas-container');
+    try {
+      const res = await fetch('/api/respostas');
+      const respostas = await res.json();
+      document.getElementById('stat-respostas').textContent = respostas.length;
+      if (respostas.length === 0) {
+        container.innerHTML = `<div class="empty-state"><p>Nenhuma resposta de lead pendente</p></div>`;
+        return;
+      }
+      container.innerHTML = respostas.map(r => `
+        <div class="resposta-card" id="resp-${r.mensagem_id}">
+          <div class="resposta-from">📩 ${r.email_from}</div>
+          <small style="color:var(--muted)">${r.assunto_original} — ${new Date(r.data_recebimento).toLocaleString('pt-BR')}</small>
+          <div class="preview-label" style="margin-top:10px">Mensagem recebida:</div>
+          <div class="resposta-body">${escapeHtml(r.corpo_resposta)}</div>
+          <div class="preview-label">Draft de resposta:</div>
+          <div class="resposta-draft" id="draft-${r.mensagem_id}" contenteditable="false">${escapeHtml(r.draft_reply)}</div>
+          <div class="horarios">
+            ${(r.horarios_propostos || []).map(h => `<span class="horario-chip">${new Date(h.inicio).toLocaleString('pt-BR', {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-approve" onclick="aprovarResposta('${r.mensagem_id}')">✅ Aprovar e Enviar</button>
+            <button class="btn btn-edit" onclick="editarResposta('${r.mensagem_id}')">✏️ Editar Draft</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      container.innerHTML = `<div class="empty-state"><p style="color:var(--red)">Erro ao carregar respostas</p></div>`;
+    }
+  }
+
+  function editarResposta(id) {
+    const el = document.getElementById('draft-' + id);
+    el.contentEditable = el.contentEditable === 'true' ? 'false' : 'true';
+    if (el.contentEditable === 'true') el.focus();
+  }
+
+  async function aprovarResposta(id) {
+    const res = await fetch(`/api/respostas/aprovar/${id}`, { method: 'POST' });
+    if (res.ok) {
+      toast('✅ Resposta enviada!');
+      document.getElementById('resp-' + id)?.remove();
+    } else {
+      toast('Erro ao enviar resposta', 'error');
+    }
+  }
+
+  async function loadRelatorio() {
+    const el = document.getElementById('relatorio-content');
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await fetch(`/logs/relatorio_${today}.json`);
+      if (!res.ok) { el.textContent = 'Nenhum relatório gerado hoje ainda.'; return; }
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch {
+      el.textContent = 'Relatório não disponível.';
+    }
+  }
+
+  // Inicializar
+  loadMessages();
+  loadStats();
+
+  // Atualizar status a cada 30s
+  setInterval(loadStats, 30000);
+  // Atualizar mensagens a cada 2min
+  setInterval(loadMessages, 120000);
+</script>
+</body>
+</html>
