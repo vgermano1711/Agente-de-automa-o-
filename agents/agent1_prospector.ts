@@ -154,7 +154,7 @@ export async function runAgent1(): Promise<Lead[]> {
 
   let allLeads: Lead[] = [];
 
-  if (!apiKey || apiKey === 'sua_chave_aqui') {
+  if (!apiKey || apiKey === 'sua_chave_aqui' || apiKey === 'nao_configurado') {
     log.warn('GOOGLE_PLACES_API_KEY não configurada — usando dados mock para desenvolvimento');
     allLeads = mockLeads(config);
   } else {
