@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Bot — Painel de Aprovação</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --border: #2a2d3e;
+      --accent: #6c63ff;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .logo { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .dot-demo { background: var(--yellow); }
+    .dot-live { background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .mode-banner { background: #2d2a00; border-bottom: 1px solid #f59e0b44; padding: 10px 24px; font-size: 0.85rem; color: var(--yellow); display: flex; align-items: center; gap: 10px; }
+    .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 24px; background: var(--surface); }
+    .tab { padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); font-size: 0.9rem; transition: all .2s; user-select: none; }
+    .tab.active { border-bottom-color: var(--accent); color: var(--text); }
+    main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+    .cards-grid { display: grid; gap: 20px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h3 { font-size: 1rem; font-weight: 600; }
+    .canal-badge { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .canal-whatsapp { background: #25d366; color: #fff; }
+    .canal-email { background: #1d4ed8; color: #fff; }
+    .card-body { display: grid; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) { .card-body { grid-template-columns: 1fr; } }
+    .card-preview { border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .preview-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+    .lp-placeholder { height: 280px; background: linear-gradient(135deg, #1a1d2e 0%, #2a2d3e 100%); border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 0.85rem; }
+    .lp-placeholder a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .video-placeholder { height: 160px; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.85rem; gap: 8px; }
+    .card-message { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .msg-body { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 0.88rem; line-height: 1.65; white-space: pre-wrap; flex: 1; min-height: 130px; overflow-y: auto; }
+    .msg-body[contenteditable=true] { outline: 2px solid var(--accent); cursor: text; }
+    .score-row { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; }
+    .score-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .score-fill { height: 100%; border-radius: 3px; transition: width .5s; }
+    .card-actions { padding: 14px 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { padding: 8px 18px; border-radius: 8px; border: none; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-approve { background: var(--green); color: #fff; }
+    .btn-edit { background: var(--yellow); color: #000; }
+    .btn-reject { background: var(--red); color: #fff; }
+    .btn-save { background: var(--accent); color: #fff; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; font-size: 0.9rem; box-shadow: 0 8px 24px rgba(0,0,0,.4); transform: translateY(100px); opacity: 0; transition: all .3s; z-index: 9999; max-width: 320px; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 4px solid var(--green); }
+    .toast.error { border-left: 4px solid var(--red); }
+    .respostas-list { display: grid; gap: 16px; }
+    .resposta-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+    .resposta-from { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    .resp-section-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 10px 0 5px; }
+    .resposta-body { background: #0d1117; border-radius: 6px; padding: 10px; font-size: 0.85rem; color: var(--muted); white-space: pre-wrap; max-height: 100px; overflow-y: auto; }
+    .resposta-draft { background: #0d1117; border: 1px solid var(--accent); border-radius: 6px; padding: 10px; font-size: 0.88rem; white-space: pre-wrap; min-height: 80px; }
+    .horarios { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+    .horario-chip { background: var(--border); border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; }
+    .relatorio-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .relatorio-box pre { font-size: 0.85rem; white-space: pre-wrap; color: #a5f3fc; }
+    #tab-respostas, #tab-relatorio { display: none; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">🤖 Sales Bot — Victor</div>
+  <div><span class="status-dot dot-demo" id="status-dot"></span><span id="status-text">Modo demo</span></div>
+</header>
+<div class="mode-banner">⚡ Demonstração — dados de exemplo. Quando rodar localmente (<code>npm run dev:api</code>), conecta em tempo real.</div>
+<div class="tabs">
+  <div class="tab active" onclick="showTab('aprovacao',this)">Aprovações <span id="badge-aprovacao" style="background:#6c63ff;color:#fff;border-radius:20px;padding:2px 8px;font-size:.75rem;margin-left:6px">3</span></div>
+  <div class="tab" onclick="showTab('respostas',this)">Respostas de Leads</div>
+  <div class="tab" onclick="showTab('relatorio',this)">Relatório</div>
+</div>
+<main>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-value" id="stat-pendentes">3</div><div class="stat-label">Pendentes de aprovação</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-enviadas">0</div><div class="stat-label">Mensagens enviadas</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-respostas">1</div><div class="stat-label">Respostas de leads</div></div>
+    <div class="stat-card"><div class="stat-value">Agente 6</div><div class="stat-label">Último concluído</div></div>
+  </div>
+  <div id="tab-aprovacao"><div class="cards-grid" id="cards-container"></div></div>
+  <div id="tab-respostas"><div class="respostas-list" id="respostas-container"></div></div>
+  <div id="tab-relatorio"><div class="relatorio-box"><pre id="relatorio-content"></pre></div></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const MSGS = [
+  { id:'001', nome_negocio:'Salão da Dona Maria', canal:'whatsapp', corpo:'Oi, Salão da Dona Maria! 👋\nVi vocês no Google — 4.2 estrelas é difícil de conseguir. Só que quem busca salão de beleza em São Paulo agora não te encontra online.\nMontei uma prévia do que poderia ser o site de vocês: https://demo-salao-da-dona-maria.netlify.app\nMe fala o que achou!', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Aprovado. Tom casual, curto, nome presente.', slug:'salao-da-dona-maria' },
+  { id:'002', nome_negocio:'Construtora Horizonte', canal:'whatsapp', corpo:'Oi, Construtora Horizonte! 👋\n81 avaliações no Google e nenhuma página própria para capturar quem pesquisa "construtora em Campinas" agora.\nFiz uma demonstração de como ficaria: https://demo-construtora-horizonte.netlify.app\nFaz sentido conversar?', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Aprovado. Mensagem curta e direta para WhatsApp.', slug:'construtora-horizonte' },
+  { id:'003', nome_negocio:'Clínica Sorria Mais', canal:'whatsapp', corpo:'Oi, Clínica Sorria Mais! 👋\n69 avaliações positivas no Google mas quem busca dentista em Campinas agora não chega até vocês.\nMontei uma prévia do que poderia ser a página de vocês: https://demo-clinica-sorria-mais.netlify.app\nMe fala o que acharam!', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Aprovado na revisão automática.', slug:'clinica-sorria-mais' }
+];
+const RESPS = [{ id:'r001', nome:'Salão da Dona Maria', de:'maria@salao.com', msg:'Que lindo! Quanto custa?', draft:'Oi, Maria! 😊\nFica em R$197 os primeiros 3 meses. Inclui WhatsApp direto e formulário de agendamento.\nTem uns 30 minutos essa semana pra a gente conversar?' }];
+let msgs = [...MSGS];
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function sc(s){return s>=85?'#22c55e':s>=70?'#f59e0b':'#ef4444';}
+function toast(m,t='success'){const e=document.getElementById('toast');e.textContent=m;e.className='toast '+t+' show';setTimeout(()=>e.classList.remove('show'),3000);}
+function showTab(t,el){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));el.classList.add('active');['aprovacao','respostas','relatorio'].forEach(x=>{document.getElementById('tab-'+x).style.display=x===t?'block':'none';});if(t==='respostas')renderResps();if(t==='relatorio')renderRel();}
+function render(){const c=document.getElementById('cards-container');const p=msgs.filter(m=>m.status==='aprovacao_pendente');document.getElementById('badge-aprovacao').textContent=p.length;document.getElementById('stat-pendentes').textContent=p.length;if(!p.length){c.innerHTML='<div class="empty-state"><p>Nenhuma mensagem pendente ✓</p></div>';return;}c.innerHTML=p.map(m=>`<div class="card" id="card-${m.id}"><div class="card-header"><div><h3>${esc(m.nome_negocio)}</h3><small style="color:var(--muted)">${esc(m.slug)}</small></div><span class="canal-badge canal-${m.canal}">${m.canal}</span></div><div class="card-body"><div class="card-preview"><div><div class="preview-label">Landing Page</div><div class="lp-placeholder">🌐<span>Disponível após Netlify deploy</span></div></div><div><div class="preview-label">Vídeo</div><div class="video-placeholder">🎬 Gerado pelo Agente 4</div></div></div><div class="card-message"><div class="preview-label">Mensagem WhatsApp</div><div class="msg-body" id="body-${m.id}">${esc(m.corpo)}</div><div class="score-row"><span style="color:var(--muted)">Score:</span><div class="score-bar"><div class="score-fill" style="width:${m.revisao_score}%;background:${sc(m.revisao_score)}"></div></div><strong style="color:${sc(m.revisao_score)}">${m.revisao_score}/100</strong></div><small style="color:var(--muted);font-size:.75rem">${esc(m.revisao_notas)}</small></div></div><div class="card-actions"><button class="btn btn-approve" onclick="aprovar('${m.id}')">✅ Aprovar e Enviar WhatsApp</button><button class="btn btn-edit" id="eb-${m.id}" onclick="edit('${m.id}')">✏️ Editar</button><button class="btn btn-save" id="sb-${m.id}" style="display:none" onclick="save('${m.id}')">💾 Salvar</button><button class="btn btn-reject" onclick="rejeitar('${m.id}')">❌ Rejeitar</button></div></div>`).join('');}
+function aprovar(id){const m=msgs.find(x=>x.id===id);if(m)m.status='enviado';toast('✅ (Demo) WhatsApp seria enviado para '+m.nome_negocio+'!');document.getElementById('card-'+id).remove();document.getElementById('stat-enviadas').textContent=msgs.filter(x=>x.status==='enviado').length;render();}
+function rejeitar(id){if(!confirm('Rejeitar?'))return;const m=msgs.find(x=>x.id===id);if(m)m.status='rejeitado';document.getElementById('card-'+id).remove();toast('Rejeitado');render();}
+function edit(id){const b=document.getElementById('body-'+id);const ed=b.contentEditable==='true';b.contentEditable=ed?'false':'true';document.getElementById('eb-'+id).style.display=ed?'inline-block':'none';document.getElementById('sb-'+id).style.display=ed?'none':'inline-block';if(!ed)b.focus();}
+function save(id){const corpo=document.getElementById('body-'+id).innerText;const m=msgs.find(x=>x.id===id);if(m)m.corpo=corpo;edit(id);toast('✓ Salvo');}
+function renderResps(){const c=document.getElementById('respostas-container');c.innerHTML=RESPS.map(r=>`<div class="resposta-card"><div class="resposta-from">📩 ${esc(r.nome)}</div><small style="color:var(--muted)">${esc(r.de)}</small><div class="resp-section-label">Mensagem recebida</div><div class="resposta-body">${esc(r.msg)}</div><div class="resp-section-label">Draft de resposta</div><div class="resposta-draft" id="dr-${r.id}" contenteditable="false">${esc(r.draft)}</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-approve" onclick="toast('✅ (Demo) Resposta enviada!')">✅ Enviar Resposta</button><button class="btn btn-edit" onclick="editDraft('${r.id}')">✏️ Editar</button></div></div>`).join('');}
+function editDraft(id){const e=document.getElementById('dr-'+id);e.contentEditable=e.contentEditable==='true'?'false':'true';if(e.contentEditable==='true')e.focus();}
+function renderRel(){document.getElementById('relatorio-content').textContent=JSON.stringify({data:new Date().toISOString().slice(0,10),leads_encontrados:5,leads_diagnosticados:5,landing_pages_geradas:5,mensagens_prontas:3,tempo_total_segundos:306,erros:[]},null,2);}
+render();
+</script>
+</body>
+</html>
