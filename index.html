@@ -72,8 +72,6 @@
     .resp-section-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 10px 0 5px; }
     .resposta-body { background: #0d1117; border-radius: 6px; padding: 10px; font-size: 0.85rem; color: var(--muted); white-space: pre-wrap; max-height: 100px; overflow-y: auto; }
     .resposta-draft { background: #0d1117; border: 1px solid var(--accent); border-radius: 6px; padding: 10px; font-size: 0.88rem; white-space: pre-wrap; min-height: 80px; }
-    .horarios { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
-    .horario-chip { background: var(--border); border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; }
     .relatorio-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
     .relatorio-box pre { font-size: 0.85rem; white-space: pre-wrap; color: #a5f3fc; }
     #tab-respostas, #tab-relatorio { display: none; }
@@ -84,17 +82,17 @@
   <div class="logo">🤖 Sales Bot — Victor</div>
   <div><span class="status-dot dot-demo" id="status-dot"></span><span id="status-text">Modo demo</span></div>
 </header>
-<div class="mode-banner">⚡ Demonstração — dados de exemplo. Quando rodar localmente (<code>npm run dev:api</code>), conecta em tempo real.</div>
+<div class="mode-banner">⚡ Mensagens geradas em 21/05/2026 — pipeline real. Quando rodar localmente (<code>npm run dev:api</code>), conecta em tempo real.</div>
 <div class="tabs">
-  <div class="tab active" onclick="showTab('aprovacao',this)">Aprovações <span id="badge-aprovacao" style="background:#6c63ff;color:#fff;border-radius:20px;padding:2px 8px;font-size:.75rem;margin-left:6px">3</span></div>
+  <div class="tab active" onclick="showTab('aprovacao',this)">Aprovações <span id="badge-aprovacao" style="background:#6c63ff;color:#fff;border-radius:20px;padding:2px 8px;font-size:.75rem;margin-left:6px">5</span></div>
   <div class="tab" onclick="showTab('respostas',this)">Respostas de Leads</div>
   <div class="tab" onclick="showTab('relatorio',this)">Relatório</div>
 </div>
 <main>
   <div class="stat-grid">
-    <div class="stat-card"><div class="stat-value" id="stat-pendentes">3</div><div class="stat-label">Pendentes de aprovação</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-pendentes">5</div><div class="stat-label">Pendentes de aprovação</div></div>
     <div class="stat-card"><div class="stat-value" id="stat-enviadas">0</div><div class="stat-label">Mensagens enviadas</div></div>
-    <div class="stat-card"><div class="stat-value" id="stat-respostas">1</div><div class="stat-label">Respostas de leads</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-respostas">0</div><div class="stat-label">Respostas de leads</div></div>
     <div class="stat-card"><div class="stat-value">Agente 6</div><div class="stat-label">Último concluído</div></div>
   </div>
   <div id="tab-aprovacao"><div class="cards-grid" id="cards-container"></div></div>
@@ -104,11 +102,13 @@
 <div class="toast" id="toast"></div>
 <script>
 const MSGS = [
-  { id:'001', nome_negocio:'Salão da Dona Maria', canal:'whatsapp', corpo:'Oi, Salão da Dona Maria! 👋\nVi vocês no Google — 4.2 estrelas é difícil de conseguir. Só que quem busca salão de beleza em São Paulo agora não te encontra online.\nMontei uma prévia do que poderia ser o site de vocês: https://demo-salao-da-dona-maria.netlify.app\nMe fala o que achou!', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Aprovado. Tom casual, curto, nome presente.', slug:'salao-da-dona-maria' },
-  { id:'002', nome_negocio:'Construtora Horizonte', canal:'whatsapp', corpo:'Oi, Construtora Horizonte! 👋\n81 avaliações no Google e nenhuma página própria para capturar quem pesquisa "construtora em Campinas" agora.\nFiz uma demonstração de como ficaria: https://demo-construtora-horizonte.netlify.app\nFaz sentido conversar?', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Aprovado. Mensagem curta e direta para WhatsApp.', slug:'construtora-horizonte' },
-  { id:'003', nome_negocio:'Clínica Sorria Mais', canal:'whatsapp', corpo:'Oi, Clínica Sorria Mais! 👋\n69 avaliações positivas no Google mas quem busca dentista em Campinas agora não chega até vocês.\nMontei uma prévia do que poderia ser a página de vocês: https://demo-clinica-sorria-mais.netlify.app\nMe fala o que acharam!', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Aprovado na revisão automática.', slug:'clinica-sorria-mais' }
+  { id:'mpfydby9f61vg', nome_negocio:'Imóveis Silva & Filhos', canal:'whatsapp', corpo:'Oi Imóveis Silva & Filhos! Vocês têm 4.6 estrelas em Curitiba, mas sem site próprio quem pesquisa imóvel no Google está fechando com o concorrente antes mesmo de te conhecer.\n\nCriei uma prévia de como ficaria a presença digital de vocês: https://exemplo.netlify.app 🏡\n\nPosso te mostrar como ficaria?', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Mensagem aprovada na revisão automática sem alterações', slug:'imoveis-silva-filhos' },
+  { id:'mpfydezn1ypqt', nome_negocio:'Construtora Horizonte', canal:'whatsapp', corpo:'Oi! Vi que a Construtora Horizonte tem 81 avaliações no Google com 4.5 estrelas — reputação boa de verdade. Só que quem ainda não te conhece em Campinas provavelmente não tá te achando quando pesquisa por construtora online.\n\nMontei uma prévia de landing page pensando justamente nisso, pra transformar essa reputação em orçamentos chegando com frequência: https://exemplo.netlify.app\n\nDá uma olhada e me fala o que achou? 🙂', status:'aprovacao_pendente', revisao_score:100, revisao_notas:'Revisado — Score: 100/100', slug:'construtora-horizonte' },
+  { id:'mpfydh8rnym0v', nome_negocio:'Clínica Sorria Mais', canal:'whatsapp', corpo:'Oi Clínica Sorria Mais! Vi que vocês têm 69 avaliações ótimas no Google, mas quem busca dentista em Campinas online provavelmente não está chegando até vocês.\n\nCriei uma vitrine digital que transforma essa reputação em agendamentos reais, sem depender só de indicação 👉 https://exemplo.netlify.app\n\nPosso te mostrar como ficaria?', status:'aprovacao_pendente', revisao_score:95, revisao_notas:'Mensagem aprovada na revisão automática sem alterações', slug:'clinica-sorria-mais' },
+  { id:'mpfydjcbfjb3p', nome_negocio:'Barbearia do Zé', canal:'whatsapp', corpo:'Oi, Barbearia do Zé! 👋\n\nVocês têm 4.3 estrelas, mas quem busca barbearia no Google em São Paulo provavelmente não tá achando vocês — e isso significa clientes indo pro concorrente.\n\nMontei uma página mostrando como ficaria pra vocês aparecerem nas buscas e receberem agendamentos direto pelo celular: https://exemplo.netlify.app — dá uma olhada e me fala o que achou!', status:'aprovacao_pendente', revisao_score:100, revisao_notas:'Revisado — Score: 100/100', slug:'barbearia-do-ze' },
+  { id:'mpfydlpz2zgh1', nome_negocio:'Salão da Dona Maria', canal:'whatsapp', corpo:'Oi! Vi que o Salão da Dona Maria tem 4.2 estrelas no Google — avaliação boa! Mas sem site, quem pesquisa "salão perto de mim" não chega até vocês.\n\nMontei uma página rápida com serviços, avaliações e link pra agendamento: https://exemplo.netlify.app\n\nDá uma olhada e me fala o que acha? 😊', status:'aprovacao_pendente', revisao_score:100, revisao_notas:'Revisado — Score: 100/100', slug:'salao-da-dona-maria' }
 ];
-const RESPS = [{ id:'r001', nome:'Salão da Dona Maria', de:'maria@salao.com', msg:'Que lindo! Quanto custa?', draft:'Oi, Maria! 😊\nFica em R$197 os primeiros 3 meses. Inclui WhatsApp direto e formulário de agendamento.\nTem uns 30 minutos essa semana pra a gente conversar?' }];
+const RESPS = [];
 let msgs = [...MSGS];
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function sc(s){return s>=85?'#22c55e':s>=70?'#f59e0b':'#ef4444';}
@@ -119,9 +119,9 @@ function aprovar(id){const m=msgs.find(x=>x.id===id);if(m)m.status='enviado';toa
 function rejeitar(id){if(!confirm('Rejeitar?'))return;const m=msgs.find(x=>x.id===id);if(m)m.status='rejeitado';document.getElementById('card-'+id).remove();toast('Rejeitado');render();}
 function edit(id){const b=document.getElementById('body-'+id);const ed=b.contentEditable==='true';b.contentEditable=ed?'false':'true';document.getElementById('eb-'+id).style.display=ed?'inline-block':'none';document.getElementById('sb-'+id).style.display=ed?'none':'inline-block';if(!ed)b.focus();}
 function save(id){const corpo=document.getElementById('body-'+id).innerText;const m=msgs.find(x=>x.id===id);if(m)m.corpo=corpo;edit(id);toast('✓ Salvo');}
-function renderResps(){const c=document.getElementById('respostas-container');c.innerHTML=RESPS.map(r=>`<div class="resposta-card"><div class="resposta-from">📩 ${esc(r.nome)}</div><small style="color:var(--muted)">${esc(r.de)}</small><div class="resp-section-label">Mensagem recebida</div><div class="resposta-body">${esc(r.msg)}</div><div class="resp-section-label">Draft de resposta</div><div class="resposta-draft" id="dr-${r.id}" contenteditable="false">${esc(r.draft)}</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-approve" onclick="toast('✅ (Demo) Resposta enviada!')">✅ Enviar Resposta</button><button class="btn btn-edit" onclick="editDraft('${r.id}')">✏️ Editar</button></div></div>`).join('');}
+function renderResps(){const c=document.getElementById('respostas-container');if(!RESPS.length){c.innerHTML='<div class="empty-state"><p>Nenhuma resposta ainda</p></div>';return;}c.innerHTML=RESPS.map(r=>`<div class="resposta-card"><div class="resposta-from">📩 ${esc(r.nome)}</div><small style="color:var(--muted)">${esc(r.de)}</small><div class="resp-section-label">Mensagem recebida</div><div class="resposta-body">${esc(r.msg)}</div><div class="resp-section-label">Draft de resposta</div><div class="resposta-draft" id="dr-${r.id}" contenteditable="false">${esc(r.draft)}</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-approve" onclick="toast('✅ (Demo) Resposta enviada!')">✅ Enviar Resposta</button><button class="btn btn-edit" onclick="editDraft('${r.id}')">✏️ Editar</button></div></div>`).join('');}
 function editDraft(id){const e=document.getElementById('dr-'+id);e.contentEditable=e.contentEditable==='true'?'false':'true';if(e.contentEditable==='true')e.focus();}
-function renderRel(){document.getElementById('relatorio-content').textContent=JSON.stringify({data:new Date().toISOString().slice(0,10),leads_encontrados:5,leads_diagnosticados:5,landing_pages_geradas:5,mensagens_prontas:3,tempo_total_segundos:306,erros:[]},null,2);}
+function renderRel(){document.getElementById('relatorio-content').textContent=JSON.stringify({data:'2026-05-21',leads_encontrados:5,leads_diagnosticados:5,landing_pages_geradas:5,mensagens_prontas:5,tempo_total_segundos:287,erros:[]},null,2);}
 render();
 </script>
 </body>
