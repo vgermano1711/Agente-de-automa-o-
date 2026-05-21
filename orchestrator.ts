@@ -10,6 +10,7 @@ import { runAgent4 } from './agents/agent4_video';
 import { runAgent5 } from './agents/agent5_canal';
 import { runAgent6 } from './agents/agent6_revisor';
 import { startAgent7Loop } from './agents/agent7_handler';
+import { initWhatsappWeb } from './utils/whatsapp';
 
 import { log } from './utils/logger';
 import { notifyOwner } from './utils/notifications';
@@ -185,6 +186,27 @@ async function runDailyCycle(): Promise<void> {
   log.success(`🏁 Ciclo diário concluído em ${Math.round((Date.now() - startTime) / 60000)}min`);
 }
 
+// Inicializar WhatsApp Web se for o provedor selecionado
+async function initWhatsApp(): Promise<void> {
+  const provider = process.env.WHATSAPP_PROVIDER || 'zapi';
+  if (provider !== 'wwebjs') return;
+
+  log.info('📱 Iniciando WhatsApp Web...');
+  log.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  log.info('Abra o WhatsApp no celular → ⋮ Menu → Dispositivos conectados → Conectar dispositivo');
+  log.info('Escaneie o QR Code que vai aparecer abaixo:');
+  log.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  try {
+    // initWhatsappWeb fica aguardando o QR ser escaneado antes de resolver
+    await initWhatsappWeb();
+    log.success('✅ WhatsApp Web conectado! Pronto para enviar mensagens.');
+  } catch (err) {
+    log.error(`WhatsApp Web falhou ao inicializar: ${(err as Error).message}`);
+    log.warn('O sistema vai rodar, mas os envios serão simulados.');
+  }
+}
+
 // Agente 7 roda em paralelo, continuamente
 startAgent7Loop({ intervalMinutes: config.intervalo_agent7_minutos || 5 });
 
@@ -192,19 +214,23 @@ startAgent7Loop({ intervalMinutes: config.intervalo_agent7_minutos || 5 });
 const cronSchedule = process.env.CRON_SCHEDULE || config.horario_ciclo || '0 8 * * *';
 log.info(`⏰ Pipeline agendado: "${cronSchedule}" (padrão: 08:00 todos os dias)`);
 
-cron.schedule(cronSchedule, () => {
-  runDailyCycle().catch((err) => {
-    log.error(`Ciclo diário falhou: ${err.message}`);
-  });
-});
+// Inicialização principal — WhatsApp primeiro, depois cron
+(async () => {
+  await initWhatsApp();
 
-// Permite rodar manualmente também
-if (process.argv.includes('--run-now')) {
-  log.info('Executando imediatamente via --run-now');
-  runDailyCycle().catch((err) => {
-    log.error(`Execução manual falhou: ${err.message}`);
-    process.exit(1);
+  cron.schedule(cronSchedule, () => {
+    runDailyCycle().catch((err) => {
+      log.error(`Ciclo diário falhou: ${err.message}`);
+    });
   });
-}
 
-log.info('🤖 Sales Bot iniciado e aguardando próximo ciclo agendado');
+  if (process.argv.includes('--run-now')) {
+    log.info('Executando imediatamente via --run-now');
+    runDailyCycle().catch((err) => {
+      log.error(`Execução manual falhou: ${err.message}`);
+      process.exit(1);
+    });
+  }
+
+  log.info('🤖 Sales Bot iniciado e aguardando próximo ciclo agendado');
+})();
