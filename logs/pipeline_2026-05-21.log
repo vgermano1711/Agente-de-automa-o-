@@ -1,0 +1,55 @@
+[2026-05-21T20:33:51.463Z] [INFO] Agente 1 — Prospector iniciado
+[2026-05-21T20:33:51.464Z] [WARN] GOOGLE_PLACES_API_KEY não configurada — usando dados mock para desenvolvimento
+[2026-05-21T20:33:51.465Z] [SUCCESS] Agente 1 concluído: 0 leads encontrados → /home/user/Agente-de-automa-o-/data/leads_2026-05-21.json
+[2026-05-21T20:33:57.560Z] [INFO] Agente 1 — Prospector iniciado
+[2026-05-21T20:33:57.561Z] [WARN] GOOGLE_PLACES_API_KEY não configurada — usando dados mock para desenvolvimento
+[2026-05-21T20:33:57.562Z] [SUCCESS] Agente 1 concluído: 5 leads encontrados → /home/user/Agente-de-automa-o-/data/leads_2026-05-21.json
+[2026-05-21T20:34:03.294Z] [INFO] Agente 2 — Diagnosticador iniciado
+[2026-05-21T20:34:03.295Z] [INFO] Diagnosticando 5 leads
+[2026-05-21T20:34:09.766Z] [INFO]   ✓ Imóveis Silva & Filhos → canal: whatsapp
+[2026-05-21T20:34:15.717Z] [INFO]   ✓ Construtora Horizonte → canal: whatsapp
+[2026-05-21T20:34:21.487Z] [INFO]   ✓ Clínica Sorria Mais → canal: whatsapp
+[2026-05-21T20:34:27.305Z] [INFO]   ✓ Barbearia do Zé → canal: whatsapp
+[2026-05-21T20:34:34.140Z] [INFO]   ✓ Salão da Dona Maria → canal: whatsapp
+[2026-05-21T20:34:34.140Z] [SUCCESS] Agente 2 concluído: 5 diagnósticos → /home/user/Agente-de-automa-o-/data/diagnosticos_2026-05-21.json
+[2026-05-21T20:34:39.234Z] [INFO] Agente 3 — Builder de Landing Page iniciado
+[2026-05-21T20:34:39.235Z] [INFO]   Gerando landing page para Imóveis Silva & Filhos...
+[2026-05-21T20:35:24.159Z] [WARN] NETLIFY_AUTH_TOKEN não configurado — pulando deploy
+[2026-05-21T20:35:24.159Z] [INFO]   ✓ Imóveis Silva & Filhos → http://localhost:3000/pages/imoveis-silva-filhos
+[2026-05-21T20:35:24.159Z] [INFO]   Gerando landing page para Construtora Horizonte...
+[2026-05-21T20:36:07.647Z] [WARN] NETLIFY_AUTH_TOKEN não configurado — pulando deploy
+[2026-05-21T20:36:07.647Z] [INFO]   ✓ Construtora Horizonte → http://localhost:3000/pages/construtora-horizonte
+[2026-05-21T20:36:07.648Z] [INFO]   Gerando landing page para Clínica Sorria Mais...
+[2026-05-21T20:36:52.203Z] [WARN] NETLIFY_AUTH_TOKEN não configurado — pulando deploy
+[2026-05-21T20:36:52.204Z] [INFO]   ✓ Clínica Sorria Mais → http://localhost:3000/pages/clinica-sorria-mais
+[2026-05-21T20:36:52.204Z] [INFO]   Gerando landing page para Barbearia do Zé...
+[2026-05-21T20:37:36.977Z] [WARN] NETLIFY_AUTH_TOKEN não configurado — pulando deploy
+[2026-05-21T20:37:36.977Z] [INFO]   ✓ Barbearia do Zé → http://localhost:3000/pages/barbearia-do-ze
+[2026-05-21T20:37:36.977Z] [INFO]   Gerando landing page para Salão da Dona Maria...
+[2026-05-21T20:38:06.868Z] [INFO] Agente 5 — Seletor de Canal e Gerador de Mensagem iniciado
+[2026-05-21T20:38:06.869Z] [INFO]   Gerando mensagem whatsapp para Imóveis Silva & Filhos...
+[2026-05-21T20:38:10.113Z] [INFO]   ✓ Imóveis Silva & Filhos → canal whatsapp
+[2026-05-21T20:38:10.113Z] [INFO]   Gerando mensagem whatsapp para Construtora Horizonte...
+[2026-05-21T20:38:14.051Z] [INFO]   ✓ Construtora Horizonte → canal whatsapp
+[2026-05-21T20:38:14.051Z] [INFO]   Gerando mensagem whatsapp para Clínica Sorria Mais...
+[2026-05-21T20:38:16.971Z] [INFO]   ✓ Clínica Sorria Mais → canal whatsapp
+[2026-05-21T20:38:16.971Z] [INFO]   Gerando mensagem whatsapp para Barbearia do Zé...
+[2026-05-21T20:38:19.691Z] [INFO]   ✓ Barbearia do Zé → canal whatsapp
+[2026-05-21T20:38:19.692Z] [INFO]   Gerando mensagem whatsapp para Salão da Dona Maria...
+[2026-05-21T20:38:21.381Z] [WARN] NETLIFY_AUTH_TOKEN não configurado — pulando deploy
+[2026-05-21T20:38:21.381Z] [INFO]   ✓ Salão da Dona Maria → http://localhost:3000/pages/salao-da-dona-maria
+[2026-05-21T20:38:21.382Z] [SUCCESS] Agente 3 concluído: 5 landing pages geradas
+[2026-05-21T20:38:22.775Z] [INFO]   ✓ Salão da Dona Maria → canal whatsapp
+[2026-05-21T20:38:22.776Z] [SUCCESS] Agente 5 concluído: 5 mensagens geradas → /home/user/Agente-de-automa-o-/data/mensagens_2026-05-21.json
+[2026-05-21T20:38:28.692Z] [INFO] Agente 6 — Revisor Anti-IA iniciado
+[2026-05-21T20:38:28.693Z] [INFO]   Revisando mensagem para Imóveis Silva & Filhos...
+[2026-05-21T20:38:28.694Z] [INFO]   ✓ Imóveis Silva & Filhos — score: 95
+[2026-05-21T20:38:28.694Z] [INFO]   Revisando mensagem para Construtora Horizonte...
+[2026-05-21T20:38:32.083Z] [INFO]   ✓ Construtora Horizonte — score: 100
+[2026-05-21T20:38:32.084Z] [INFO]   Revisando mensagem para Clínica Sorria Mais...
+[2026-05-21T20:38:32.084Z] [INFO]   ✓ Clínica Sorria Mais — score: 95
+[2026-05-21T20:38:32.084Z] [INFO]   Revisando mensagem para Barbearia do Zé...
+[2026-05-21T20:38:35.147Z] [INFO]   ✓ Barbearia do Zé — score: 100
+[2026-05-21T20:38:35.147Z] [INFO]   Revisando mensagem para Salão da Dona Maria...
+[2026-05-21T20:38:38.265Z] [INFO]   ✓ Salão da Dona Maria — score: 100
+[2026-05-21T20:38:38.266Z] [SUCCESS] Agente 6 concluído: 5 mensagens prontas para aprovação
