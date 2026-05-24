@@ -95,11 +95,20 @@ async function searchPlaces(
           (siteStatus === 'sem_site' ? 30 : 15)
       );
 
+      const telefone = (detalhes.formatted_phone_number as string) || '';
+      // Filtra fixos: celular BR tem 9 dígitos após DDD e começa com 9
+      const digitos = telefone.replace(/\D/g, '');
+      const isCelular = digitos.length >= 11 && digitos[2] === '9';
+      if (!isCelular) {
+        log.info(`  Pulando ${detalhes.name as string} — número fixo (${telefone})`);
+        continue;
+      }
+
       const lead: Lead = {
         id: generateId(),
         nome: detalhes.name as string || place.name,
         endereco: detalhes.formatted_address as string || place.formatted_address,
-        telefone: (detalhes.formatted_phone_number as string) || '',
+        telefone,
         categoria: segmento,
         website,
         cidade,
