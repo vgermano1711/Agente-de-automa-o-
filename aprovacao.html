@@ -310,7 +310,8 @@ const MOCK_RELATORIO = {
 };
 
 // ─── Detecção de modo: live vs demo ────────────────────────────────────────
-const API_BASE = '';
+// Aceita ?api=https://meu-tunel.loca.lt para uso remoto, senão usa localhost
+const API_BASE = new URLSearchParams(window.location.search).get('api') || '';
 let isLive = false;
 
 async function detectMode() {
@@ -459,7 +460,7 @@ async function saveEdit(id, canal) {
   const assunto = subjEl ? subjEl.innerText : undefined;
 
   if (isLive) {
-    const r = await fetch(`/api/editar/${id}`, {
+    const r = await fetch(`${API_BASE}/api/editar/${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ corpo, ...(assunto ? { assunto } : {}) })
@@ -478,7 +479,7 @@ async function aprovar(id) {
   card.querySelectorAll('.btn').forEach(b => b.disabled = true);
 
   if (isLive) {
-    const r = await fetch(`/api/aprovar/${id}`, { method: 'POST' });
+    const r = await fetch(`${API_BASE}/api/aprovar/${id}`, { method: 'POST' });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
       toast('Erro: ' + (err.error || 'Falha'), 'error');
@@ -501,7 +502,7 @@ async function aprovar(id) {
 async function rejeitar(id) {
   if (!confirm('Rejeitar esta mensagem?')) return;
   if (isLive) {
-    await fetch(`/api/rejeitar/${id}`, { method: 'POST' });
+    await fetch(`${API_BASE}/api/rejeitar/${id}`, { method: 'POST' });
   } else {
     const m = messages.find(m => m.id === id);
     if (m) m.status = 'rejeitado';
@@ -562,7 +563,7 @@ function editarDraft(id) {
 
 async function aprovarResposta(id) {
   if (isLive) {
-    const r = await fetch(`/api/respostas/aprovar/${id}`, { method: 'POST' });
+    const r = await fetch(`${API_BASE}/api/respostas/aprovar/${id}`, { method: 'POST' });
     if (!r.ok) { toast('Erro ao enviar', 'error'); return; }
   } else {
     toast('✅ (Demo) Resposta enviada! No modo live, o reply seria enviado via Gmail.');

@@ -13,40 +13,51 @@ import { dataPath, readJson, writeJson, generateId, today } from '../utils/dataH
 const client = new Anthropic();
 
 const CHANNEL_PROMPTS: Record<string, string> = {
-  whatsapp: `Gere uma mensagem de WhatsApp de prospecção fria. Regras OBRIGATÓRIAS:
-- Máximo 4 linhas curtas — WhatsApp longo não é lido
-- Comece com "Oi [nome do negócio]!" de forma natural
-- Linha 2: mencione o problema específico deles em 1 frase
-- Linha 3: proposta de valor + link da landing page
-- Linha 4: CTA curto ("Me fala o que achou!" ou "Posso te mostrar como ficaria?")
-- Tom: conversa de pessoa para pessoa, NUNCA corporativo
-- Pode usar 1-2 emojis no máximo, com naturalidade
-- NÃO use asteriscos para negrito, NÃO use listas`,
+  whatsapp: `Você é o Victor, desenvolvedor web que encontrou esse negócio no Google e resolveu mandar uma mensagem de forma genuína.
 
-  email: `Gere um email de prospecção frio com:
-- Assunto: impactante, curioso, sem spam (máx 60 chars)
-- Corpo: 3 parágrafos curtos. Parágrafo 1: abertura direta mencionando o negócio pelo nome e a cidade. Parágrafo 2: problema específico e a solução (a landing page). Parágrafo 3: CTA claro com o link.
-- Tom: profissional mas acessível, sem linguagem de IA`,
+Escreva uma mensagem de WhatsApp EXATAMENTE como o Victor digitaria no celular — casual, próxima, gentil e profissional ao mesmo tempo. Sem script de vendas, sem robô.
 
-  sms: `Gere uma mensagem SMS com MÁXIMO 160 caracteres. Deve:
-- Mencionar o nome do negócio
-- Ter link placeholder {{LINK}}
-- Ser direto e humano, não parecer robô
-- Incluir proposta de valor em poucas palavras`,
+ESTRUTURA (4 blocos curtos, cada um em uma linha separada):
+1. Saudação natural mencionando o nome do negócio — como quem reconhece algo que viu passando
+2. Um elogio genuíno + observação do problema de forma leve, sem soar crítico
+3. "Fiz uma prévia de como poderia ser a presença de vocês online: [link]" — apresente como algo que você já fez por conta própria, não como proposta
+4. Pergunta aberta e leve, sem pressão — tipo "O que você achou?" ou "Faz sentido pra vocês?" ou "Curioso pra saber sua opinião"
 
-  instagram: `Gere uma DM de Instagram. Deve:
-- Começar de forma casual, como uma pessoa real escreveria
-- Mencionar o negócio pelo nome de forma natural
-- Ser curta (máx 3 frases)
-- Incluir o link da landing page
-- Tom: amigável, local, humano`,
+REGRAS DE VOZ:
+- Victor fala "você" não "vocês" quando se dirige ao dono
+- Nunca use "Prezado", "Atenciosamente", "Segue em anexo"
+- Nunca use linguagem corporativa ou de vendedor
+- Pode usar no máximo 1 emoji, só se ficar natural (não force)
+- Frases curtas, como quem digita rápido no celular
+- O link deve aparecer sozinho na linha, sem texto antes ou depois
+- NÃO use asteriscos, NÃO use listas, NÃO use títulos`,
 
-  linkedin: `Gere uma mensagem LinkedIn. Deve:
-- Tom profissional, focado em ROI e resultados
-- Mencionar o nome do negócio e a cidade
-- Máx 4 frases
-- Focar no impacto comercial de ter uma presença digital profissional
-- Incluir o link`,
+  email: `Você é o Victor, desenvolvedor web que encontrou esse negócio no Google.
+
+Escreva um email como o Victor escreveria — direto, gentil, sem enrolação. Como se estivesse escrevendo para um conhecido, não para um desconhecido.
+
+ASSUNTO: Curto, direto, desperta curiosidade sem parecer spam (máx 50 chars). Ex: "fiz algo pra vocês" ou "vi o [nome] no Google"
+
+CORPO — 3 parágrafos curtos:
+1. Abertura genuína: como achou o negócio e o que chamou atenção (algo específico e verdadeiro)
+2. Observação leve do problema + o que o Victor já preparou, com o link
+3. Pergunta aberta e leve, sem pressão. Assina como "Victor" apenas.
+
+Tom: como uma mensagem de email pessoal, não newsletter. Sem template, sem formatação excessiva.`,
+
+  sms: `Você é o Victor, desenvolvedor web. Escreva um SMS de no máximo 160 caracteres.
+Mencione o nome do negócio, apresente o link e faça uma pergunta curta e leve.
+Tom: direto e humano, como quem manda SMS de verdade.`,
+
+  instagram: `Você é o Victor, desenvolvedor web que achou esse negócio no Instagram.
+Escreva uma DM curta (máx 3 frases) como o Victor escreveria de verdade.
+Abertura casual, elogio genuíno, link da prévia e pergunta leve.
+Tom: descontraído, como uma mensagem de quem realmente viu o perfil.`,
+
+  linkedin: `Você é o Victor, desenvolvedor web.
+Escreva uma mensagem LinkedIn de até 4 frases.
+Tom profissional mas pessoal — como quem encontrou o perfil e teve uma ideia genuína de ajudar.
+Mencione o negócio, a cidade, apresente o link da prévia e termine com uma pergunta aberta.`,
 };
 
 async function generateMessage(diag: Diagnostico): Promise<Mensagem> {
@@ -56,29 +67,26 @@ async function generateMessage(diag: Diagnostico): Promise<Mensagem> {
 
   const channelInstructions = CHANNEL_PROMPTS[canal];
 
-  const prompt = `Você é um especialista em copywriting de vendas para pequenos negócios locais brasileiros.
-Escreva uma mensagem de prospecção REAL, humana, sem linguagem de IA.
+  const prompt = `${channelInstructions}
 
-${channelInstructions}
-
-Dados do negócio:
+Contexto do negócio que o Victor encontrou:
 - Nome: ${diag.nome}
 - Categoria: ${diag.categoria}
 - Cidade: ${diag.cidade}
-- Problema: ${diag.problema_principal}
-- Ângulo de venda: ${diag.angulo_de_venda}
-- Proposta de valor: ${diag.proposta_de_valor}
-- Tom: ${diag.tom_da_abordagem}
-- Link da landing page: ${landingUrl}
+- Problema identificado: ${diag.problema_principal}
+- Oportunidade: ${diag.angulo_de_venda}
+- Link da prévia que o Victor já preparou: ${landingUrl}
 
-Regras ABSOLUTAS:
-1. NUNCA use "Espero que este email te encontre bem" ou variações
-2. NUNCA use "Prezado(a)" — use o nome do negócio ou forma casual
-3. NUNCA termine com "Atenciosamente" em canais informais
-4. O nome "${diag.nome}" deve aparecer pelo menos 1x de forma natural
-5. Máximo 3 parágrafos
+REGRAS ABSOLUTAS — qualquer violação invalida a mensagem:
+1. NUNCA use "Espero que este email te encontre bem" ou qualquer variação
+2. NUNCA use "Prezado(a)", "Caro(a)", "Atenciosamente", "Cordialmente"
+3. NUNCA mencione "automação", "IA", "sistema", "bot" ou "prospecção"
+4. NUNCA use linguagem de vendedor ou script de vendas
+5. O nome "${diag.nome}" deve aparecer pelo menos 1 vez de forma natural
+6. A mensagem deve parecer que foi digitada agora, não copiada de template
+7. Termine sempre com uma pergunta leve e genuína, sem pressão
 
-${canal === 'email' ? 'Retorne JSON: {"assunto": "...", "corpo": "..."}' : 'Retorne apenas o texto da mensagem, sem JSON'}`;
+${canal === 'email' ? 'Retorne JSON: {"assunto": "...", "corpo": "..."}' : 'Retorne apenas o texto da mensagem, sem explicações ou comentários adicionais'}`;
 
   try {
     const response = await client.messages.create({
@@ -131,11 +139,11 @@ function mockMessage(diag: Diagnostico, landingUrl: string, videoPath: string): 
   const fs = require('fs');
 
   const corpos: Record<string, string> = {
-    whatsapp: `Oi, ${diag.nome}! 👋\nVi vocês no Google — reputação ótima, mas quem busca ${diag.categoria} em ${diag.cidade} agora não te encontra online.\nMontei uma prévia do que poderia ser o site de vocês: ${landingUrl}\nMe fala o que achou!`,
-    email: `Oi, tudo bem?\n\nVi o ${diag.nome} no Google e fiquei impressionado com as avaliações — reputação assim é difícil de construir. Só que percebi uma coisa: quando alguém busca ${diag.categoria} em ${diag.cidade}, não consegue te encontrar direito online.\n\nMontei uma prévia de como sua presença digital poderia ficar: ${landingUrl}\n\nSe curtir, posso deixar isso no ar pra você em menos de 24h. Sem enrolação.`,
-    sms: `Oi! Montei uma prévia de site para o ${diag.nome}. Dá uma olhada: ${landingUrl} — posso te mostrar como isso pode trazer mais clientes.`,
-    instagram: `Oi! Vi o ${diag.nome} aqui no Google — incrível as avaliações! Montei uma prévia de site pra vocês, dá uma olhada: ${landingUrl} 🚀`,
-    linkedin: `Olá! Analisando negócios de ${diag.categoria} em ${diag.cidade}, notei que o ${diag.nome} tem ótima reputação mas baixa visibilidade digital. Preparei uma demonstração gratuita do que uma landing page profissional poderia representar em novos clientes: ${landingUrl}`,
+    whatsapp: `Oi! Vi o ${diag.nome} no Google enquanto pesquisava negócios de ${diag.categoria} em ${diag.cidade}.\n\nFiquei impressionado com as avaliações — reputação assim é difícil de construir. Só que percebi que quem busca por vocês online acaba não te encontrando com facilidade.\n\nResolvi montar uma prévia de como ficaria a presença de vocês na internet:\n${landingUrl}\n\nO que você achou?`,
+    email: `Oi, tudo bem?\n\nVi o ${diag.nome} no Google hoje e fiquei curioso — as avaliações de vocês são muito boas, esse nível de reputação é raro. Só que percebi que quando alguém busca ${diag.categoria} em ${diag.cidade}, fica difícil te encontrar online.\n\nResolvi montar uma prévia de como poderia ser a presença digital de vocês: ${landingUrl}\n\nFaz sentido pra você?\n\nVictor`,
+    sms: `Oi! Sou o Victor, vi o ${diag.nome} no Google e fiz uma prévia de site pra vocês: ${landingUrl} — o que você achou?`,
+    instagram: `Oi! Vi o ${diag.nome} aqui e fiquei curioso — as avaliações de vocês são ótimas. Resolvi montar uma prévia de como ficaria a presença online de vocês: ${landingUrl} — faz sentido?`,
+    linkedin: `Olá! Vi o ${diag.nome} no Google e fiquei impressionado com a reputação de vocês em ${diag.cidade}. Percebi uma oportunidade de melhorar a visibilidade online e já montei uma prévia: ${landingUrl}. Faria sentido conversar sobre isso?`,
   };
 
   return {

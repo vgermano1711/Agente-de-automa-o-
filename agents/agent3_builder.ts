@@ -5,9 +5,10 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import axios from 'axios';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import { Diagnostico } from '../types';
 import { log } from '../utils/logger';
 import { dataPath, readJson, writeJson, today } from '../utils/dataHelpers';
@@ -131,7 +132,7 @@ function generateMockHTML(
 </html>`;
 }
 
-function deployToNetlify(slug: string, sitePath: string): string | null {
+async function deployToNetlify(slug: string, sitePath: string): Promise<string | null> {
   const netlifyToken = process.env.NETLIFY_AUTH_TOKEN;
   const prefix = process.env.NETLIFY_SITE_PREFIX || 'demo-';
   if (!netlifyToken) {
@@ -141,14 +142,64 @@ function deployToNetlify(slug: string, sitePath: string): string | null {
 
   try {
     const siteName = `${prefix}${slug}`.slice(0, 63);
-    const output = execSync(
-      `npx netlify-cli deploy --dir="${sitePath}" --site-name="${siteName}" --prod --auth="${netlifyToken}" --json`,
-      { encoding: 'utf-8', timeout: 60000 }
+    const api = axios.create({
+      baseURL: 'https://api.netlify.com/api/v1',
+      headers: { Authorization: `Bearer ${netlifyToken}` },
+    });
+
+    // Find or create site
+    let siteId: string;
+    const searchResp = await api.get('/sites', { params: { name: siteName } });
+    const existing = (searchResp.data as any[]).find((s: any) => s.name === siteName);
+    if (existing) {
+      siteId = existing.id;
+      log.info(`  Site existente: ${siteName}`);
+    } else {
+      const createResp = await api.post('/sites', { name: siteName });
+      siteId = (createResp.data as any).id;
+      log.info(`  Novo site criado: ${siteName}`);
+    }
+
+    // Compute SHA1 of index.html
+    const htmlContent = fs.readFileSync(path.join(sitePath, 'index.html'));
+    const sha1 = crypto.createHash('sha1').update(htmlContent).digest('hex');
+
+    // Create deploy with file digest
+    const deployResp = await api.post(
+      `/sites/${siteId}/deploys`,
+      { files: { '/index.html': sha1 } },
+      { headers: { 'Content-Type': 'application/json' } }
     );
-    const result = JSON.parse(output);
-    return result.deploy_url || result.url || null;
+    const deployId = (deployResp.data as any).id;
+    const deployUrl: string = (deployResp.data as any).deploy_ssl_url || (deployResp.data as any).deploy_url || '';
+
+    // Upload file if required
+    const required: string[] = (deployResp.data as any).required || [];
+    if (required.includes(sha1)) {
+      await axios.put(
+        `https://api.netlify.com/api/v1/deploys/${deployId}/files/index.html`,
+        htmlContent,
+        { headers: { Authorization: `Bearer ${netlifyToken}`, 'Content-Type': 'application/octet-stream' } }
+      );
+    }
+
+    // Poll until ready (max 30s)
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const statusResp = await api.get(`/deploys/${deployId}`);
+      const state: string = (statusResp.data as any).state;
+      if (state === 'ready' || state === 'current') {
+        return (statusResp.data as any).deploy_ssl_url || (statusResp.data as any).deploy_url || deployUrl;
+      }
+      if (state === 'error') {
+        log.error(`Deploy com erro para ${slug}`);
+        return null;
+      }
+    }
+
+    return deployUrl || null;
   } catch (err) {
-    log.error(`Netlify deploy falhou para ${slug}: ${(err as Error).message}`);
+    log.error(`Netlify API deploy falhou para ${slug}: ${(err as Error).message}`);
     return null;
   }
 }
@@ -177,7 +228,7 @@ export async function runAgent3(): Promise<Diagnostico[]> {
     fs.writeFileSync(htmlPath, html);
     diag.landing_page_path = htmlPath;
 
-    const deployedUrl = deployToNetlify(diag.slug, pageDir);
+    const deployedUrl = await deployToNetlify(diag.slug, pageDir);
     diag.landing_page_url = deployedUrl || `http://localhost:3000/pages/${diag.slug}`;
 
     log.info(`  ✓ ${diag.nome} → ${diag.landing_page_url}`);
