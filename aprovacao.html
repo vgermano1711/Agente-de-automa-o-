@@ -180,7 +180,35 @@
     .relatorio-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
     .relatorio-box pre { font-size: 0.85rem; white-space: pre-wrap; color: #a5f3fc; }
 
-    #tab-respostas, #tab-relatorio { display: none; }
+    #tab-respostas, #tab-relatorio, #tab-pesquisar { display: none; }
+
+    /* ── Pesquisa ── */
+    .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .search-row { display: flex; gap: 12px; }
+    .search-input { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 0.95rem; outline: none; transition: border .2s; }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+    .btn-search { background: var(--accent); color: #fff; padding: 12px 24px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity .15s; }
+    .btn-search:hover { opacity: .85; }
+    .search-hint { font-size: 0.8rem; color: var(--muted); margin-top: 10px; }
+    .search-results { display: grid; gap: 16px; }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    @media (max-width: 700px) { .result-card { flex-direction: column; } }
+    .result-info { flex: 1; }
+    .result-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+    .result-meta { font-size: 0.82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .result-stars { color: #f59e0b; font-weight: 700; }
+    .site-badge { padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+    .site-sem_site { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e44; }
+    .site-site_antigo { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b44; }
+    .site-site_ok { background: #64748b22; color: #64748b; border: 1px solid #64748b44; }
+    .result-address { font-size: 0.83rem; color: var(--muted); }
+    .result-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .btn-prospectar { background: var(--green); color: #fff; padding: 10px 18px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity .15s; }
+    .btn-prospectar:hover { opacity: .85; }
+    .btn-prospectar:disabled { opacity: .4; cursor: not-allowed; }
+    .oportunidade-tag { font-size: 0.75rem; color: var(--green); font-weight: 600; }
+    .search-loading { text-align: center; padding: 40px; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -203,6 +231,7 @@
 <div class="tabs">
   <div class="tab active" onclick="showTab('aprovacao',this)">Aprovações <span id="badge-aprovacao" class="canal-badge canal-linkedin" style="margin-left:6px;vertical-align:middle">0</span></div>
   <div class="tab" onclick="showTab('respostas',this)">Respostas de Leads</div>
+  <div class="tab" onclick="showTab('pesquisar',this)">🔍 Pesquisar Lead</div>
   <div class="tab" onclick="showTab('relatorio',this)">Relatório</div>
 </div>
 
@@ -220,6 +249,19 @@
 
   <div id="tab-respostas">
     <div class="respostas-list" id="respostas-container"></div>
+  </div>
+
+  <div id="tab-pesquisar">
+    <div class="search-box">
+      <div class="search-row">
+        <input class="search-input" id="search-input" type="text"
+          placeholder="Ex: barbearia Curitiba, salão de beleza São Paulo, clínica odontológica Campinas..."
+          onkeydown="if(event.key==='Enter') pesquisar()" />
+        <button class="btn-search" onclick="pesquisar()">🔍 Pesquisar</button>
+      </div>
+      <div class="search-hint">Busca negócios no Google Maps e analisa o potencial de cada lead automaticamente.</div>
+    </div>
+    <div id="search-results" class="search-results"></div>
   </div>
 
   <div id="tab-relatorio">
@@ -349,11 +391,110 @@ function scoreColor(s) {
 function showTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['aprovacao','respostas','relatorio'].forEach(t => {
+  ['aprovacao','respostas','pesquisar','relatorio'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   if (tab === 'respostas') renderRespostas();
   if (tab === 'relatorio') renderRelatorio();
+  if (tab === 'pesquisar') document.getElementById('search-input').focus();
+}
+
+// ─── Pesquisa de Leads ───────────────────────────────────────────────────────
+async function pesquisar() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+
+  const container = document.getElementById('search-results');
+  container.innerHTML = '<div class="search-loading">🔍 Buscando no Google Maps...</div>';
+
+  try {
+    const url = isLive ? (API_BASE + '/api/pesquisar?q=' + encodeURIComponent(q)) : null;
+
+    if (!url) {
+      // Mock para modo demo
+      await new Promise(r => setTimeout(r, 1200));
+      const mock = [
+        { place_id:'m1', nome: q.split(' ')[0]+' Premium', endereco:'Rua das Flores, 123 — São Paulo, SP', telefone:'(11) 99999-0001', avaliacao:4.8, total_avaliacoes:312, website:null, categoria:q, cidade:'São Paulo, SP', status_site:'sem_site' },
+        { place_id:'m2', nome: q.split(' ')[0]+' Centro', endereco:'Av. Paulista, 456 — São Paulo, SP', telefone:'(11) 99999-0002', avaliacao:4.5, total_avaliacoes:187, website:'http://site-antigo.com.br', categoria:q, cidade:'São Paulo, SP', status_site:'site_antigo' },
+        { place_id:'m3', nome: q.split(' ')[0]+' Express', endereco:'Rua Augusta, 789 — São Paulo, SP', telefone:'(11) 99999-0003', avaliacao:4.3, total_avaliacoes:94, website:null, categoria:q, cidade:'São Paulo, SP', status_site:'sem_site' },
+      ];
+      renderResultados(mock, true);
+      return;
+    }
+
+    const r = await fetch(url);
+    const data = await r.json();
+    renderResultados(data.resultados || [], data.mock);
+  } catch (err) {
+    container.innerHTML = '<div class="search-loading">❌ Erro ao buscar: ' + err.message + '</div>';
+  }
+}
+
+function siteLabel(s) {
+  const map = { sem_site: '🟢 Sem site — ótima oportunidade', site_antigo: '🟡 Site desatualizado', site_ok: '⚪ Já tem site moderno' };
+  return map[s] || s;
+}
+
+function renderResultados(resultados, isMock) {
+  const container = document.getElementById('search-results');
+  if (!resultados.length) {
+    container.innerHTML = '<div class="search-loading">Nenhum resultado encontrado.</div>';
+    return;
+  }
+
+  const mockBanner = isMock ? '<div style="background:#2d2a00;border:1px solid #f59e0b44;border-radius:8px;padding:10px 14px;font-size:0.8rem;color:#f59e0b;margin-bottom:16px">⚡ Resultados de exemplo — configure GOOGLE_PLACES_API_KEY para dados reais do Google Maps</div>' : '';
+
+  container.innerHTML = mockBanner + resultados.map(r => {
+    const oportunidade = r.status_site !== 'site_ok';
+    const stars = '★'.repeat(Math.round(r.avaliacao)) + '☆'.repeat(5 - Math.round(r.avaliacao));
+    return `
+    <div class="result-card">
+      <div class="result-info">
+        <div class="result-name">${esc(r.nome)}</div>
+        <div class="result-meta">
+          <span class="result-stars">${stars} ${r.avaliacao.toFixed(1)}</span>
+          <span>${r.total_avaliacoes} avaliações</span>
+          ${r.telefone ? '<span>📞 ' + esc(r.telefone) + '</span>' : ''}
+          <span class="site-badge site-${r.status_site}">${siteLabel(r.status_site)}</span>
+        </div>
+        <div class="result-address">📍 ${esc(r.endereco)}</div>
+        ${r.website ? '<div style="margin-top:6px;font-size:0.8rem;color:var(--muted)">🌐 ' + esc(r.website) + '</div>' : ''}
+      </div>
+      <div class="result-actions">
+        ${oportunidade ? '<div class="oportunidade-tag">✦ Boa oportunidade</div>' : ''}
+        <button class="btn-prospectar" id="btn-${r.place_id}" onclick="prospectar(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+          ${oportunidade ? '🚀 Prospectar este lead' : '📋 Adicionar mesmo assim'}
+        </button>
+        <small style="color:var(--muted);font-size:0.72rem;text-align:right">Gera landing page<br>+ mensagem WhatsApp</small>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function prospectar(lead) {
+  const btn = document.getElementById('btn-' + lead.place_id);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Processando...'; }
+
+  if (!isLive) {
+    await new Promise(r => setTimeout(r, 1500));
+    toast('✅ (Demo) Pipeline iniciado para ' + lead.nome + '! Em modo real, geraria landing page e mensagem WhatsApp.');
+    if (btn) { btn.textContent = '✓ Adicionado'; }
+    return;
+  }
+
+  try {
+    const r = await fetch(API_BASE + '/api/prospectar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead),
+    });
+    const data = await r.json();
+    toast('🚀 Pipeline iniciado para ' + lead.nome + '! A mensagem aparecerá na aba Aprovações em ~2 min.');
+    if (btn) { btn.textContent = '✓ Em processamento'; }
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Prospectar este lead'; }
+  }
 }
 
 // ─── Aprovações ─────────────────────────────────────────────────────────────

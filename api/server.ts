@@ -238,6 +238,125 @@ app.post('/api/respostas/aprovar/:id', async (req, res) => {
   }
 });
 
+// GET /api/pesquisar?q=barbearia+curitiba — busca negócios via Google Places
+app.get('/api/pesquisar', async (req, res) => {
+  const query = String(req.query.q || '').trim();
+  if (!query) return res.status(400).json({ error: 'Parâmetro q é obrigatório' });
+
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+
+  if (!apiKey || apiKey === 'nao_configurado' || apiKey === 'sua_chave_aqui') {
+    // Mock para quando não há API key
+    const mockResults = [
+      { place_id: 'mock1', nome: query.split(' ')[0] + ' Premium', endereco: 'Rua das Flores, 123 — São Paulo, SP', telefone: '(11) 99999-0001', avaliacao: 4.8, total_avaliacoes: 312, website: null, categoria: query, cidade: 'São Paulo, SP', status_site: 'sem_site' },
+      { place_id: 'mock2', nome: query.split(' ')[0] + ' Centro', endereco: 'Av. Paulista, 456 — São Paulo, SP', telefone: '(11) 99999-0002', avaliacao: 4.5, total_avaliacoes: 187, website: 'http://site-antigo.com.br', categoria: query, cidade: 'São Paulo, SP', status_site: 'site_antigo' },
+      { place_id: 'mock3', nome: query.split(' ')[0] + ' Express', endereco: 'Rua Augusta, 789 — São Paulo, SP', telefone: '(11) 99999-0003', avaliacao: 4.3, total_avaliacoes: 94, website: null, categoria: query, cidade: 'São Paulo, SP', status_site: 'sem_site' },
+    ];
+    return res.json({ resultados: mockResults, mock: true });
+  }
+
+  try {
+    const axios = (await import('axios')).default;
+    const searchResp = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
+      params: { query, key: apiKey, language: 'pt-BR' },
+    });
+
+    const places = searchResp.data?.results || [];
+    const resultados = [];
+
+    for (const place of places.slice(0, 8)) {
+      let telefone = '';
+      let website: string | null = null;
+
+      try {
+        const detailResp = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
+          params: { place_id: place.place_id, fields: 'formatted_phone_number,website', key: apiKey, language: 'pt-BR' },
+        });
+        const d = detailResp.data?.result || {};
+        telefone = d.formatted_phone_number || '';
+        website = d.website || null;
+      } catch { /* ignora erros de detalhe */ }
+
+      let status_site = 'sem_site';
+      if (website) {
+        try {
+          const siteResp = await axios.get(website, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+          const temViewport = siteResp.data?.includes('width=device-width');
+          status_site = temViewport ? 'site_ok' : 'site_antigo';
+        } catch { status_site = 'sem_site'; }
+      }
+
+      resultados.push({
+        place_id: place.place_id,
+        nome: place.name,
+        endereco: place.formatted_address,
+        telefone,
+        avaliacao: place.rating || 0,
+        total_avaliacoes: place.user_ratings_total || 0,
+        website,
+        categoria: query,
+        cidade: place.formatted_address?.split(',').slice(-2).join(',').trim() || '',
+        status_site,
+      });
+    }
+
+    res.json({ resultados, mock: false });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// POST /api/prospectar — roda pipeline completo para um lead específico
+app.post('/api/prospectar', async (req, res) => {
+  const lead = req.body;
+  if (!lead?.nome) return res.status(400).json({ error: 'Dados do lead são obrigatórios' });
+
+  res.json({ success: true, message: 'Pipeline iniciado para ' + lead.nome });
+
+  // Roda em background
+  (async () => {
+    try {
+      const { runAgent2 } = await import('../agents/agent2_diagnostico');
+      const { runAgent3 } = await import('../agents/agent3_builder');
+      const { runAgent5 } = await import('../agents/agent5_canal');
+      const { runAgent6 } = await import('../agents/agent6_revisor');
+
+      const { dataPath, writeJson, generateId, slugify } = await import('../utils/dataHelpers');
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      const leadCompleto = {
+        id: generateId(),
+        nome: lead.nome,
+        endereco: lead.endereco || '',
+        telefone: lead.telefone || '',
+        categoria: lead.categoria || '',
+        website: lead.website || null,
+        cidade: lead.cidade || '',
+        avaliacao: lead.avaliacao || 0,
+        total_avaliacoes: lead.total_avaliacoes || 0,
+        google_place_id: lead.place_id || generateId(),
+        score_oportunidade: 80,
+        data_prospeccao: todayStr,
+      };
+
+      // Salva o lead no arquivo do dia (mantendo os existentes)
+      const leadsFile = dataPath('leads_{data}.json');
+      const leadsExistentes = fs.existsSync(leadsFile) ? JSON.parse(fs.readFileSync(leadsFile, 'utf-8')) : [];
+      const leadsAtualizado = [...leadsExistentes.filter((l: { google_place_id: string }) => l.google_place_id !== leadCompleto.google_place_id), leadCompleto];
+      writeJson(leadsFile, leadsAtualizado);
+
+      await runAgent2();
+      await runAgent3();
+      await runAgent5();
+      await runAgent6();
+
+      log.success(`Pipeline concluído para lead pesquisado: ${lead.nome}`);
+    } catch (err) {
+      log.error(`Pipeline falhou para ${lead.nome}: ${(err as Error).message}`);
+    }
+  })();
+});
+
 // Redirecionar raiz para o painel
 app.get('/', (_req, res) => {
   res.sendFile(path.join(process.cwd(), 'aprovacao.html'));
