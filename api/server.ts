@@ -13,7 +13,7 @@ import { google } from 'googleapis';
 import { Mensagem, RespostaLead } from '../types';
 import { log } from '../utils/logger';
 import { notifyOwner } from '../utils/notifications';
-import { sendWhatsApp } from '../utils/whatsapp';
+import { sendWhatsApp, initWhatsappWeb, whatsappConfigured } from '../utils/whatsapp';
 
 const app = express();
 app.use(cors());
@@ -46,10 +46,25 @@ function writeMessages(msgs: Mensagem[]): void {
   fs.writeFileSync(getMsgFile(), JSON.stringify(msgs, null, 2));
 }
 
-// GET /api/mensagens — lista todas pendentes de aprovação
+// GET /api/mensagens — lista todas pendentes de aprovação (com telefone do diagnóstico)
 app.get('/api/mensagens', (_req, res) => {
   const msgs = readMessages().filter((m) => m.status === 'aprovacao_pendente');
-  res.json(msgs);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const diagFile = path.join(process.cwd(), 'data', `diagnosticos_${todayStr}.json`);
+  const diags: { slug: string; telefone: string }[] = fs.existsSync(diagFile)
+    ? JSON.parse(fs.readFileSync(diagFile, 'utf-8'))
+    : [];
+
+  const result = msgs.map((m) => {
+    const diag = diags.find((d) => d.slug === m.slug);
+    return { ...m, _telefone: diag?.telefone || '' };
+  });
+  res.json(result);
+});
+
+// GET /api/whatsapp-status — estado da conexão WhatsApp
+app.get('/api/whatsapp-status', (_req, res) => {
+  res.json({ connected: whatsappConfigured() });
 });
 
 // GET /api/status — status geral do sistema
@@ -145,6 +160,12 @@ async function sendGmailReply(resposta: RespostaLead): Promise<void> {
   });
 }
 
+// GET /api/mensagens/enviadas — histórico de mensagens enviadas
+app.get('/api/mensagens/enviadas', (_req, res) => {
+  const msgs = readMessages();
+  res.json(msgs.filter((m) => m.status === 'enviado'));
+});
+
 // POST /api/aprovar/:id — aprova e envia mensagem
 app.post('/api/aprovar/:id', async (req, res) => {
   const msgs = readMessages();
@@ -156,14 +177,22 @@ app.post('/api/aprovar/:id', async (req, res) => {
     return res.status(400).json({ error: 'Mensagem não está pendente de aprovação' });
   }
 
-  // Pegar o telefone do lead do arquivo de diagnósticos
+  // Pegar o telefone: 1) do body (usuário digitou), 2) do diagnóstico
   const today = new Date().toISOString().slice(0, 10);
-  const diagFile = path.join(process.cwd(), 'data', `diagnosticos_${today}.json`);
-  let telefone = '';
-  if (fs.existsSync(diagFile)) {
-    const diags = JSON.parse(fs.readFileSync(diagFile, 'utf-8'));
-    const diag = diags.find((d: { slug: string; telefone: string }) => d.slug === msg.slug);
-    if (diag) telefone = diag.telefone;
+  let telefone: string = (req.body as { telefone?: string }).telefone?.trim() || '';
+
+  if (!telefone) {
+    const diagFile = path.join(process.cwd(), 'data', `diagnosticos_${today}.json`);
+    if (fs.existsSync(diagFile)) {
+      const diags = JSON.parse(fs.readFileSync(diagFile, 'utf-8'));
+      const diag = diags.find((d: { slug: string; telefone: string }) => d.slug === msg.slug);
+      if (diag) telefone = diag.telefone;
+    }
+  }
+
+  // Bloquear envio WhatsApp sem telefone
+  if (msg.canal === 'whatsapp' && (!telefone || telefone.replace(/\D/g, '').length < 10)) {
+    return res.status(400).json({ error: 'telefone_ausente', message: 'Informe o número de WhatsApp para enviar' });
   }
 
   try {
@@ -364,6 +393,13 @@ app.get('/', (_req, res) => {
 
 app.listen(PORT, () => {
   log.success(`🌐 Servidor rodando em http://localhost:${PORT}`);
+
+  if (process.env.WHATSAPP_PROVIDER === 'wwebjs') {
+    log.info('📱 Reconectando WhatsApp Web (sessão salva)...');
+    initWhatsappWeb().catch((err) => {
+      log.warn(`WhatsApp Web não inicializado: ${(err as Error).message} — envios serão simulados`);
+    });
+  }
 });
 
 export default app;

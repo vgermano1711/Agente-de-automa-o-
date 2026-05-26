@@ -89,7 +89,7 @@ function createVideo(diag: Diagnostico, screenshots: string[]): string | null {
     const listContent = screenshots.map((s) => `file '${s}'\nduration ${duration}`).join('\n');
     fs.writeFileSync(listFile, listContent);
 
-    const drawtext = `drawtext=text='Sua empresa pode ter isso':fontcolor=white:fontsize=28:x=(w-text_w)/2:y=h-80:box=1:boxcolor=black@0.6:boxborderw=10`;
+    const drawtext = `drawtext=fontfile='C\\:/Windows/Fonts/arialbd.ttf':text='Sua empresa pode ter isso':fontcolor=white:fontsize=28:x=(w-text_w)/2:y=h-80:box=1:boxcolor=black@0.6:boxborderw=10`;
 
     const result = spawnSync(
       'ffmpeg',

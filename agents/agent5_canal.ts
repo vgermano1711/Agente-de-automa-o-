@@ -171,17 +171,28 @@ export async function runAgent5(): Promise<Mensagem[]> {
     return [];
   }
 
-  const mensagens: Mensagem[] = [];
-  for (const diag of diagnosticos) {
+  const msgFile = dataPath('mensagens_{data}.json');
+  const existentes = readJson<Mensagem[]>(msgFile) || [];
+  const slugsComMensagem = new Set(existentes.map((m) => m.slug));
+
+  const novos = diagnosticos.filter((d) => !slugsComMensagem.has(d.slug));
+
+  if (novos.length === 0) {
+    log.info('Todos os diagnósticos já têm mensagem — nada a fazer');
+    return existentes;
+  }
+
+  const novasMensagens: Mensagem[] = [];
+  for (const diag of novos) {
     log.info(`  Gerando mensagem ${diag.canal_recomendado} para ${diag.nome}...`);
     const msg = await generateMessage(diag);
-    mensagens.push(msg);
+    novasMensagens.push(msg);
     log.info(`  ✓ ${diag.nome} → canal ${msg.canal}`);
   }
 
-  const msgFile = dataPath('mensagens_{data}.json');
-  writeJson(msgFile, mensagens);
+  const merged = [...existentes, ...novasMensagens];
+  writeJson(msgFile, merged);
 
-  log.success(`Agente 5 concluído: ${mensagens.length} mensagens geradas → ${msgFile}`);
-  return mensagens;
+  log.success(`Agente 5 concluído: +${novasMensagens.length} mensagem(ns) → ${msgFile}`);
+  return merged;
 }

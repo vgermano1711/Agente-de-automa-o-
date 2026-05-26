@@ -56,8 +56,9 @@ async function reviewMessage(msg: Mensagem): Promise<Mensagem> {
   const needsRevision = foundPhrases.length > 0 || !paragraphsOk || !mentionsBiz;
 
   if (!needsRevision) {
-    msg.revisao_score = 95;
-    msg.revisao_notas = 'Mensagem aprovada na revisão automática sem alterações';
+    const paragraphs = countParagraphs(msg.corpo);
+    msg.revisao_score = Math.max(70, 100 - (paragraphs > 3 ? 15 : 0) - (paragraphs > 4 ? 10 : 0));
+    msg.revisao_notas = `Aprovado automaticamente. ${paragraphs} parágrafos. Score: ${msg.revisao_score}/100`;
     msg.status = 'aprovacao_pendente';
     return msg;
   }
@@ -118,6 +119,7 @@ ${msg.canal === 'email' ? 'Se havia assunto, reescreva também. Retorne JSON: {"
       100 -
         remainingPhrases.length * 10 -
         (countParagraphs(msg.corpo) > 3 ? 15 : 0) -
+        (countParagraphs(msg.corpo) > 4 ? 10 : 0) -
         (!mentionsBusiness(msg.corpo, msg.nome_negocio) ? 10 : 0)
     );
 

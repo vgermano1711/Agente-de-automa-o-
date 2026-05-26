@@ -106,22 +106,30 @@ export async function runAgent2(): Promise<Diagnostico[]> {
     return [];
   }
 
-  const top5 = leads
-    .sort((a, b) => b.score_oportunidade - a.score_oportunidade)
-    .slice(0, 5);
+  const diagFile = dataPath('diagnosticos_{data}.json');
+  const existentes = readJson<Diagnostico[]>(diagFile) || [];
+  const slugsExistentes = new Set(existentes.map((d) => d.slug));
 
-  log.info(`Diagnosticando ${top5.length} leads`);
+  // Novos leads sem diagnóstico ainda
+  const novos = leads.filter((l) => !slugsExistentes.has(slugify(l.nome)));
 
-  const diagnosticos: Diagnostico[] = [];
-  for (const lead of top5) {
+  if (novos.length === 0) {
+    log.info('Todos os leads já possuem diagnóstico — nada a fazer');
+    return existentes;
+  }
+
+  log.info(`Diagnosticando ${novos.length} lead(s) novo(s)`);
+
+  const novosDiags: Diagnostico[] = [];
+  for (const lead of novos) {
     const diag = await diagnoseLead(lead);
-    diagnosticos.push(diag);
+    novosDiags.push(diag);
     log.info(`  ✓ ${lead.nome} → canal: ${diag.canal_recomendado}`);
   }
 
-  const diagFile = dataPath('diagnosticos_{data}.json');
-  writeJson(diagFile, diagnosticos);
+  const merged = [...existentes, ...novosDiags];
+  writeJson(diagFile, merged);
 
-  log.success(`Agente 2 concluído: ${diagnosticos.length} diagnósticos → ${diagFile}`);
-  return diagnosticos;
+  log.success(`Agente 2 concluído: +${novosDiags.length} diagnóstico(s) → ${diagFile}`);
+  return merged;
 }

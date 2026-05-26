@@ -245,6 +245,7 @@
 
   <div id="tab-aprovacao">
     <div class="cards-grid" id="cards-container"></div>
+    <div id="historico-section" style="display:none"></div>
   </div>
 
   <div id="tab-respostas">
@@ -400,6 +401,9 @@ function showTab(tab, el) {
 }
 
 // ─── Pesquisa de Leads ───────────────────────────────────────────────────────
+let _searchResults = [];
+let _searchMock = false;
+
 async function pesquisar() {
   const q = document.getElementById('search-input').value.trim();
   if (!q) return;
@@ -436,6 +440,8 @@ function siteLabel(s) {
 }
 
 function renderResultados(resultados, isMock) {
+  _searchResults = resultados;
+  _searchMock = isMock;
   const container = document.getElementById('search-results');
   if (!resultados.length) {
     container.innerHTML = '<div class="search-loading">Nenhum resultado encontrado.</div>';
@@ -450,20 +456,21 @@ function renderResultados(resultados, isMock) {
     return `
     <div class="result-card">
       <div class="result-info">
-        <div class="result-name">${esc(r.nome)}</div>
+        <div class="result-name">${escHtml(r.nome)}</div>
         <div class="result-meta">
           <span class="result-stars">${stars} ${r.avaliacao.toFixed(1)}</span>
           <span>${r.total_avaliacoes} avaliações</span>
-          ${r.telefone ? '<span>📞 ' + esc(r.telefone) + '</span>' : ''}
+          ${r.telefone ? '<span>📞 ' + escHtml(r.telefone) + '</span>' : ''}
           <span class="site-badge site-${r.status_site}">${siteLabel(r.status_site)}</span>
         </div>
-        <div class="result-address">📍 ${esc(r.endereco)}</div>
-        ${r.website ? '<div style="margin-top:6px;font-size:0.8rem;color:var(--muted)">🌐 ' + esc(r.website) + '</div>' : ''}
+        <div class="result-address">📍 ${escHtml(r.endereco)}</div>
+        ${r.website ? '<div style="margin-top:6px;font-size:0.8rem;color:var(--muted)">🌐 ' + escHtml(r.website) + '</div>' : ''}
       </div>
       <div class="result-actions">
         ${oportunidade ? '<div class="oportunidade-tag">✦ Boa oportunidade</div>' : ''}
-        <button class="btn-prospectar" id="btn-${r.place_id}" onclick="prospectar(${JSON.stringify(r).replace(/"/g,'&quot;')})">
-          ${oportunidade ? '🚀 Prospectar este lead' : '📋 Adicionar mesmo assim'}
+        <button class="btn-prospectar" id="btn-${r.place_id}"
+          ${_prospectados.has(r.place_id) ? 'disabled' : `onclick="prospectar(${JSON.stringify(r).replace(/"/g,'&quot;')})"`}>
+          ${_prospectados.has(r.place_id) ? '✓ Em processamento' : (oportunidade ? '🚀 Prospectar este lead' : '📋 Adicionar mesmo assim')}
         </button>
         <small style="color:var(--muted);font-size:0.72rem;text-align:right">Gera landing page<br>+ mensagem WhatsApp</small>
       </div>
@@ -471,14 +478,18 @@ function renderResultados(resultados, isMock) {
   }).join('');
 }
 
+const _prospectados = new Set();
+
 async function prospectar(lead) {
+  if (_prospectados.has(lead.place_id)) return;
   const btn = document.getElementById('btn-' + lead.place_id);
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Processando...'; }
 
   if (!isLive) {
     await new Promise(r => setTimeout(r, 1500));
     toast('✅ (Demo) Pipeline iniciado para ' + lead.nome + '! Em modo real, geraria landing page e mensagem WhatsApp.');
-    if (btn) { btn.textContent = '✓ Adicionado'; }
+    _prospectados.add(lead.place_id);
+    if (btn) { btn.disabled = true; btn.textContent = '✓ Adicionado'; }
     return;
   }
 
@@ -488,13 +499,55 @@ async function prospectar(lead) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(lead),
     });
-    const data = await r.json();
-    toast('🚀 Pipeline iniciado para ' + lead.nome + '! A mensagem aparecerá na aba Aprovações em ~2 min.');
-    if (btn) { btn.textContent = '✓ Em processamento'; }
+    await r.json();
+    _prospectados.add(lead.place_id);
+    toast('🚀 Gerando landing page e mensagem para ' + lead.nome + '… aguarde.');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Gerando…'; }
+    _aguardarMensagem(lead, btn);
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = '🚀 Prospectar este lead'; }
   }
+}
+
+function _aguardarMensagem(lead, btn) {
+  const baselineIds = new Set(messages.map(m => m.id));
+  const nomeNorm = lead.nome.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const inicio = Date.now();
+  const MAX_ESPERA = 5 * 60 * 1000; // 5 minutos
+  let dots = 0;
+
+  const intervalo = setInterval(async () => {
+    if (Date.now() - inicio > MAX_ESPERA) {
+      clearInterval(intervalo);
+      if (btn) { btn.textContent = '✓ Em processamento'; }
+      toast('Pipeline ainda rodando — verifique a aba Aprovações em breve.');
+      return;
+    }
+
+    dots = (dots + 1) % 4;
+    if (btn) { btn.textContent = '⏳ Gerando' + '.'.repeat(dots + 1); }
+
+    try {
+      const r = await fetch(API_BASE + '/api/mensagens');
+      const novas = await r.json();
+      const nova = novas.find(m =>
+        !baselineIds.has(m.id) &&
+        m.nome_negocio?.toLowerCase().replace(/[^a-z0-9]/g, '').includes(nomeNorm.slice(0, 8))
+      );
+      if (nova) {
+        clearInterval(intervalo);
+        messages = novas;
+        renderMessages();
+        if (btn) { btn.disabled = true; btn.textContent = '✓ Pronto!'; }
+        toast('✅ Mensagem para ' + lead.nome + ' pronta! Redirecionando para Aprovações…');
+        setTimeout(() => {
+          const tabEl = document.querySelector('.tab[onclick*="aprovacao"]');
+          if (tabEl) tabEl.click();
+        }, 1200);
+      }
+    } catch { /* ignora erros de rede temporários */ }
+  }, 5000);
 }
 
 // ─── Aprovações ─────────────────────────────────────────────────────────────
@@ -526,9 +579,40 @@ function renderMessages() {
       <p>Nenhuma mensagem pendente</p>
       <small style="margin-top:8px;display:block">O pipeline roda todo dia às 08:00, ou rode <code style="background:#1a1d2e;padding:2px 6px;border-radius:4px">npm run run-now</code></small>
     </div>`;
-    return;
+  } else {
+    container.innerHTML = pending.map(renderCard).join('');
   }
-  container.innerHTML = pending.map(renderCard).join('');
+  loadHistorico();
+}
+
+async function loadHistorico() {
+  const section = document.getElementById('historico-section');
+  if (!section) return;
+  if (!isLive) { section.style.display = 'none'; return; }
+
+  try {
+    const r = await fetch(API_BASE + '/api/mensagens/enviadas');
+    const enviadas = await r.json();
+    if (!enviadas.length) { section.style.display = 'none'; return; }
+
+    section.style.display = 'block';
+    section.innerHTML = `
+      <h3 style="color:var(--muted);font-size:0.85rem;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 12px">
+        📤 Enviadas (${enviadas.length})
+      </h3>
+      ${enviadas.map(m => `
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;opacity:0.7">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>${escHtml(m.nome_negocio)}</strong>
+            <span style="display:flex;gap:8px;align-items:center">
+              <span class="canal-badge canal-${m.canal}">${m.canal}</span>
+              <small style="color:var(--muted)">${new Date(m.data_envio).toLocaleString('pt-BR')}</small>
+            </span>
+          </div>
+          <div style="font-size:0.85rem;color:var(--muted);white-space:pre-wrap;line-height:1.5">${escHtml(m.corpo)}</div>
+          ${m.landing_page_url ? `<a href="${escHtml(m.landing_page_url)}" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--accent);text-decoration:none;display:inline-block;margin-top:8px">🔗 Ver landing page ↗</a>` : ''}
+        </div>`).join('')}`;
+  } catch { section.style.display = 'none'; }
 }
 
 function renderCard(msg) {
@@ -537,11 +621,18 @@ function renderCard(msg) {
 
   let lpSection;
   if (lpUrl) {
-    lpSection = `<div class="lp-frame"><iframe src="${escHtml(lpUrl)}" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe></div>`;
+    lpSection = `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+        <a href="${escHtml(lpUrl)}" target="_blank" rel="noopener"
+           style="font-size:0.78rem;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:4px">
+          Abrir site completo ↗
+        </a>
+      </div>
+      <div class="lp-frame"><iframe src="/pages/${escHtml(msg.slug)}/" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe></div>`;
   } else {
     lpSection = `<div class="lp-placeholder">
       🌐
-      <span>Landing page ${isLive ? 'não disponível localmente' : '(disponível após deploy Netlify)'}</span>
+      <span>Landing page ${isLive ? 'não disponível localmente' : '(disponível após deploy)'}</span>
       ${lpUrl ? `<a href="${escHtml(lpUrl)}" target="_blank" rel="noopener">Abrir link ↗</a>` : ''}
     </div>`;
   }
@@ -573,6 +664,15 @@ function renderCard(msg) {
           <strong style="color:${scoreColor(score)}">${score}/100</strong>
         </div>
         ${msg.revisao_notas ? `<small style="color:var(--muted);font-size:.75rem">${escHtml(msg.revisao_notas)}</small>` : ''}
+        ${msg.canal === 'whatsapp' ? `
+        <div style="margin-top:12px;padding:10px 12px;background:#0d1117;border-radius:8px;border:1px solid var(--border)">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:6px">📱 WhatsApp do destinatário</label>
+          <input id="tel-${msg.id}" type="tel" placeholder="Ex: (11) 99999-9999"
+            value="${escHtml(msg._telefone || '')}"
+            style="width:100%;background:#161b27;border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:0.9rem;outline:none"
+            oninput="document.getElementById('tel-${msg.id}').style.borderColor='var(--accent)'" />
+          ${!msg._telefone ? '<small style="color:#f59e0b;margin-top:4px;display:block">⚠ Número não encontrado automaticamente — preencha manualmente</small>' : '<small style="color:#22c55e;margin-top:4px;display:block">✓ Número obtido do Google Places</small>'}
+        </div>` : ''}
       </div>
     </div>
     <div class="card-actions">
@@ -620,10 +720,22 @@ async function aprovar(id) {
   card.querySelectorAll('.btn').forEach(b => b.disabled = true);
 
   if (isLive) {
-    const r = await fetch(`${API_BASE}/api/aprovar/${id}`, { method: 'POST' });
+    const telInput = document.getElementById('tel-' + id);
+    const telefone = telInput ? telInput.value.trim() : '';
+
+    const r = await fetch(`${API_BASE}/api/aprovar/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone }),
+    });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
-      toast('Erro: ' + (err.error || 'Falha'), 'error');
+      if (err.error === 'telefone_ausente') {
+        toast('Preencha o número de WhatsApp antes de enviar', 'error');
+        if (telInput) { telInput.style.borderColor = '#ef4444'; telInput.focus(); }
+      } else {
+        toast('Erro: ' + (err.error || 'Falha'), 'error');
+      }
       card.querySelectorAll('.btn').forEach(b => b.disabled = false);
       return;
     }
