@@ -62,7 +62,7 @@ Mencione o negócio, a cidade, apresente o link da prévia e termine com uma per
 
 async function generateMessage(diag: Diagnostico): Promise<Mensagem> {
   const canal = diag.canal_recomendado;
-  const landingUrl = diag.landing_page_url || 'https://exemplo.netlify.app';
+  const landingUrl = diag.landing_page_url || 'http://localhost:3000/pages/' + diag.slug;
   const videoPath = path.join(process.cwd(), 'videos', `${diag.slug}.mp4`);
 
   const channelInstructions = CHANNEL_PROMPTS[canal];

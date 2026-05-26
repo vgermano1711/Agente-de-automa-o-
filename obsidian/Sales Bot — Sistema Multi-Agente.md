@@ -40,7 +40,7 @@ O ciclo roda automaticamente todo dia às **08:00**. Você aprova no painel ante
 - **IA:** Claude API (Anthropic) — claude-sonnet-4-6
 - **Prospecção:** Google Places API
 - **WhatsApp:** whatsapp-web.js (gratuito, QR code) ou Z-API (pago)
-- **Landing Pages:** HTML/CSS gerado por IA → deploy Netlify
+- **Landing Pages:** HTML/CSS gerado por IA → deploy Surge.sh (gratuito)
 - **Vídeo:** Puppeteer (screenshots) + ffmpeg (montagem)
 - **Agendamento:** node-cron (`0 8 * * *`)
 - **Produção:** PM2

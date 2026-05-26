@@ -84,7 +84,7 @@ export interface Config {
   leads_por_dia: number;
   horario_ciclo: string;
   intervalo_agent7_minutos: number;
-  netlify_site_prefix: string;
+  surge_prefix: string;
   notificacoes_ativas: boolean;
 }
 

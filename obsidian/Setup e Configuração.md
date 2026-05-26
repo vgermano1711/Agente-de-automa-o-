@@ -27,7 +27,7 @@ npm run dev:api      # abre painel em localhost:3000
 | `ANTHROPIC_API_KEY` | ✅ Sim | Chave da API do Claude |
 | `WHATSAPP_PROVIDER` | ✅ Sim | `wwebjs` (grátis) ou `zapi` (pago) |
 | `GOOGLE_PLACES_API_KEY` | Recomendado | Leads reais do Google Maps |
-| `NETLIFY_AUTH_TOKEN` | Opcional | Deploy automático das LPs |
+| `SURGE_LOGIN` + `SURGE_TOKEN` | Opcional | Deploy automático das LPs (Surge.sh, grátis) |
 | `GMAIL_USER` + `GMAIL_APP_PASSWORD` | Opcional | Monitorar respostas |
 | `PUSHOVER_TOKEN` + `PUSHOVER_USER` | Opcional | Notificações no celular |
 | `OWNER_WHATSAPP` | Opcional | Número do dono para notificações |

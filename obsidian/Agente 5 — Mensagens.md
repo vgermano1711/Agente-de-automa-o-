@@ -31,7 +31,7 @@ As mensagens são escritas na voz do **Victor** — desenvolvedor web que encont
 > Oi, tudo bem? Vi a Barbearia do Zé aqui no Google — 372 avaliações com 5 estrelas é impressionante. Só achei que o link no perfil não faz jus a isso.
 >
 > Por curiosidade resolvi montar uma prévia de como ficaria um site pra vocês:
-> https://barbers-in-barbearia.netlify.app
+> https://sales-bot-barbearia-do-ze.surge.sh
 >
 > O que você acha? Faz sentido pra vocês ter algo assim?
 

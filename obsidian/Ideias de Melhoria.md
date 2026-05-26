@@ -7,7 +7,7 @@ parent: "[[Sales Bot — Sistema Multi-Agente]]"
 
 ## Alta Prioridade
 
-- [ ] **Solução de hospedagem para LPs** — Netlify atingiu limite. Avaliar GitHub Pages por lead ou VPS próprio
+- [x] **Solução de hospedagem para LPs** — Migrado para Surge.sh (gratuito, ilimitado)
 - [ ] **Dashboard de métricas** — taxa de resposta, conversão, receita gerada
 - [ ] **A/B test de mensagens** — testar variações do prompt e medir qual converte mais
 

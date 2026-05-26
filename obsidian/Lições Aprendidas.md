@@ -19,8 +19,8 @@ O pipeline pode cair no meio (timeout de API, erro de rede). Salvar `pipeline_st
 ### Mock first, real depois
 Desenvolver com dados mock (sem Google Places API) acelerou muito o ciclo de iteração. O sistema funciona 100% sem nenhuma API externa para testes.
 
-### Netlify tem limite gratuito
-O plano free do Netlify limita o número de sites. Para produção em escala, considerar GitHub Pages por lead ou um servidor próprio para servir as LPs.
+### Surge.sh > Netlify para escala
+O plano free do Netlify limita o número de sites. A solução foi migrar para **Surge.sh** — também gratuito, mas sem limite de projetos. Configurar com `SURGE_LOGIN` e `SURGE_TOKEN` no `.env`.
 
 ---
 
