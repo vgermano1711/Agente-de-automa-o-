@@ -10,7 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
-import { Mensagem, RespostaLead } from '../types';
+import { Mensagem, RespostaLead, CadenciaLead } from '../types';
 import { log } from '../utils/logger';
 import { notifyOwner } from '../utils/notifications';
 import { sendWhatsApp, initWhatsappWeb, whatsappConfigured } from '../utils/whatsapp';
@@ -208,6 +208,17 @@ app.post('/api/aprovar/:id', async (req, res) => {
     msgs[idx].data_envio = new Date().toISOString();
     writeMessages(msgs);
 
+    // Registrar na cadência de follow-up
+    try {
+      const { registrarNaCadencia } = await import('../agents/cadencia');
+      const todayDiagFile = path.join(process.cwd(), 'data', `diagnosticos_${today()}.json`);
+      if (fs.existsSync(todayDiagFile)) {
+        const diags = JSON.parse(fs.readFileSync(todayDiagFile, 'utf-8'));
+        const diag = diags.find((d: { slug: string }) => d.slug === msg.slug);
+        if (diag) registrarNaCadencia(diag, msgs[idx]);
+      }
+    } catch { /* não bloqueia envio se cadência falhar */ }
+
     await notifyOwner(
       `✅ WhatsApp enviado para ${msg.nome_negocio} (${telefone || 'número não encontrado'})`,
       'Mensagem enviada'
@@ -385,6 +396,58 @@ app.post('/api/prospectar', async (req, res) => {
     }
   })();
 });
+
+// ─── CADÊNCIA ENDPOINTS ───────────────────────────────────────────────────────
+
+const CADENCIA_FILE = path.join(process.cwd(), 'data', 'cadencia.json');
+
+function readCadencias(): CadenciaLead[] {
+  if (!fs.existsSync(CADENCIA_FILE)) return [];
+  return JSON.parse(fs.readFileSync(CADENCIA_FILE, 'utf-8'));
+}
+
+// GET /api/cadencia — lista todos os leads na cadência
+app.get('/api/cadencia', (_req, res) => {
+  res.json(readCadencias());
+});
+
+// GET /api/cadencia/relatorio — relatório semanal da cadência
+app.get('/api/cadencia/relatorio', (_req, res) => {
+  try {
+    const { gerarRelatorio } = require('../agents/cadencia');
+    res.json(gerarRelatorio());
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// POST /api/cadencia/:slug/resposta — marca lead como respondeu ou recusou
+app.post('/api/cadencia/:slug/resposta', (req, res) => {
+  const { tipo } = req.body as { tipo?: 'respondeu' | 'recusou' };
+  if (tipo !== 'respondeu' && tipo !== 'recusou') {
+    return res.status(400).json({ error: 'tipo deve ser respondeu ou recusou' });
+  }
+  try {
+    const { marcarResposta } = require('../agents/cadencia');
+    marcarResposta(req.params.slug, tipo);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// POST /api/cadencia/processar — processa follow-ups do dia (chamado pelo cron)
+app.post('/api/cadencia/processar', async (_req, res) => {
+  try {
+    const { processarCadencias } = await import('../agents/cadencia');
+    await processarCadencias();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Redirecionar raiz para o painel
 app.get('/', (_req, res) => {

@@ -1,3 +1,54 @@
+export interface IdentidadeVisual {
+  cor_primaria: string;
+  cor_secundaria: string;
+  cor_texto: string;
+  cor_fundo: string;
+  cor_acento: string;
+  tom: 'formal' | 'amigável' | 'jovem' | 'premium' | 'técnico' | 'artístico';
+  tipografia: 'serifada' | 'sans-moderna' | 'display' | 'bold-impacto';
+}
+
+export interface SegmentoClassificacao {
+  macro: string;
+  nivel2: string;
+  micro: string[];
+  confianca: number;
+  fontes: string[];
+  status: 'aprovado' | 'bloqueado';
+  motivo_bloqueio?: string;
+}
+
+export interface PerfilCadencia {
+  melhor_canal: 'whatsapp' | 'email' | 'instagram';
+  melhor_horario: 'manhã' | 'tarde' | 'noite';
+  tom_followup: string;
+}
+
+export interface FollowUpEntry {
+  dia: number;
+  canal: string;
+  horario: string;
+  variacao: string;
+  enviado_em: string;
+  resultado: 'sem_resposta' | 'respondeu' | 'recusou' | 'pendente';
+}
+
+export interface CadenciaLead {
+  lead_id: string;
+  slug: string;
+  nome_negocio: string;
+  telefone: string;
+  canal_primario: 'whatsapp' | 'email' | 'instagram';
+  canal_secundario: 'whatsapp' | 'email' | 'instagram';
+  etapa_atual: 0 | 1 | 3 | 7 | 14 | 21;
+  status: 'ativo' | 'respondeu' | 'recusou' | 'inativo' | 'reativacao';
+  data_primeiro_contato: string;
+  data_proximo_contato: string | null;
+  historico: FollowUpEntry[];
+  segmento_micro: string;
+  cidade: string;
+}
+
 export interface Lead {
   id: string;
   nome: string;
@@ -28,6 +79,9 @@ export interface Diagnostico {
   landing_page_url: string | null;
   landing_page_path: string | null;
   data_diagnostico: string;
+  segmento?: SegmentoClassificacao;
+  identidade_visual?: IdentidadeVisual;
+  perfil_cadencia?: PerfilCadencia;
 }
 
 export interface Mensagem {
