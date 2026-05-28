@@ -211,7 +211,7 @@ app.post('/api/aprovar/:id', async (req, res) => {
     // Registrar na cadência de follow-up
     try {
       const { registrarNaCadencia } = await import('../agents/cadencia');
-      const todayDiagFile = path.join(process.cwd(), 'data', `diagnosticos_${today()}.json`);
+      const todayDiagFile = path.join(process.cwd(), 'data', `diagnosticos_${today}.json`);
       if (fs.existsSync(todayDiagFile)) {
         const diags = JSON.parse(fs.readFileSync(todayDiagFile, 'utf-8'));
         const diag = diags.find((d: { slug: string }) => d.slug === msg.slug);

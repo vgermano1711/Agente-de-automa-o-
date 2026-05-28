@@ -44,6 +44,140 @@ function lighten(hex: string, amount = 0.15): string {
   return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PERSONALIDADES DE DESIGN — cada tom gera um visual genuinamente diferente
+// ─────────────────────────────────────────────────────────────────────────────
+function getPersonalityCSS(
+  tom: string, p: string, _s: string, _txt: string, _bg: string, ac: string,
+  pRgb: string, acRgb: string
+): string {
+  switch (tom) {
+    case 'premium': return `
+/* ── PREMIUM: luxo, arestas vivas, dourado ── */
+*{border-radius:0!important}
+.hero-h1{letter-spacing:-.05em;font-weight:900;line-height:.96;font-size:clamp(2.2rem,6.5vw,4.8rem)}
+.hero-badge{background:transparent!important;border:none!important;padding:0 0 0 2px;letter-spacing:.38em;font-size:.58rem;opacity:.7}
+.hero-badge::before{display:none}
+.sec-title{letter-spacing:-.03em;font-weight:900;font-size:clamp(1.7rem,4.2vw,2.6rem)}
+.sec-label{letter-spacing:.4em;font-size:.58rem;font-weight:400;opacity:.45}
+.section-rule{display:block;width:44px;height:1px;background:var(--ac);margin:14px 0 0}
+.section-header.center .section-rule{margin:14px auto 0}
+.hero-rule{display:block;width:56px;height:1px;background:var(--ac);margin:18px auto 26px}
+.diag-card,.agent-card{border-top:1px solid rgba(${acRgb},.14)!important;transition:border-top-color .25s,background .25s}
+.diag-card:hover,.agent-card:hover{border-top-color:var(--ac)!important}
+.metrics-grid{gap:0;border:1px solid rgba(${pRgb},.18)}
+.metric-card+.metric-card{border-left:1px solid rgba(${pRgb},.12)}
+@media(max-width:600px){.metric-card+.metric-card{border-left:none;border-top:1px solid rgba(${pRgb},.12)}}
+.social-card{border-radius:0!important;border-left:2px solid rgba(${acRgb},.2)!important}
+.social-card:hover{border-left-color:var(--ac)!important}
+.agent-roman{display:block;font-family:var(--hf);font-size:.6rem;color:var(--ac);letter-spacing:.22em;margin-bottom:8px;opacity:.8}
+.cta-final h2{font-size:clamp(1.9rem,5vw,3.4rem);letter-spacing:-.03em}
+`;
+
+    case 'artístico': return `
+/* ── ARTÍSTICO: expressivo, assimétrico, colorido ── */
+.hero-h1{font-size:clamp(3rem,8.5vw,5.8rem);line-height:.9;letter-spacing:-.01em}
+.hero-badge{background:var(--ac)!important;color:var(--bg)!important;border:none!important;font-weight:900;letter-spacing:.04em;font-size:.74rem}
+.hero-badge::before{display:none}
+.btn-primary,.btn-secondary,.nav-cta,.floating-btn,.hero-badge,.agent-badge,.urgency-tag,.social-resultado{border-radius:50px!important}
+.sec-title{font-size:clamp(1.9rem,5.2vw,3.2rem);line-height:.93;letter-spacing:-.01em}
+.diag-card:nth-child(1){border-top:none!important;border-bottom:3px solid var(--ac)!important}
+.diag-card:nth-child(2){border-top:none!important;border-bottom:3px solid ${lighten(ac, 0.12)}!important}
+.diag-card:nth-child(3){border-top:none!important;border-bottom:3px solid var(--p-light)!important}
+.agent-card:nth-child(odd){border-top:3px solid var(--ac)!important}
+.agent-card:nth-child(even){border-top:3px solid var(--p-light)!important}
+.metrics-grid{background:none;gap:12px}
+.metric-card{border:2px solid rgba(${pRgb},.2)!important;border-radius:16px!important;background:rgba(${pRgb},.05)!important}
+.metric-card:nth-child(2n){border-color:rgba(${acRgb},.3)!important}
+.art-blob{position:absolute;border-radius:50%;filter:blur(100px);opacity:.12;pointer-events:none;z-index:0}
+`;
+
+    case 'formal': return `
+/* ── FORMAL: limpo, estruturado, profissional ── */
+.hero{text-align:left;align-items:flex-start;padding-left:clamp(24px,5vw,48px)}
+.hero-content{margin:0;max-width:600px}
+.hero-ctas,.hero-social{justify-content:flex-start}
+.hero-divider{justify-content:flex-start;max-width:none}
+.hero-divider::after{display:none}
+.hero-sub{margin-left:0;margin-right:0}
+.diag-card,.agent-card{border-left:3px solid var(--p)!important;border-top:none!important;border-radius:6px!important;transition:border-left-color .2s,background .2s}
+.diag-card:hover,.agent-card:hover{border-left-color:var(--ac)!important}
+.section-header:not(.center){border-left:3px solid var(--p);padding-left:18px}
+.metrics-grid{border:1px solid rgba(${pRgb},.15);border-radius:8px;overflow:hidden;gap:0}
+.metric-card+.metric-card{border-left:1px solid rgba(${pRgb},.1)}
+@media(max-width:600px){.metric-card+.metric-card{border-left:none;border-top:1px solid rgba(${pRgb},.1)}}
+.btn-primary,.btn-secondary,.nav-cta{border-radius:4px!important}
+.agent-badge{border-radius:3px!important;letter-spacing:.12em}
+.sec-label{font-weight:700;color:var(--p);letter-spacing:.18em}
+.hero-badge{font-size:.66rem;letter-spacing:.14em}
+.hero-h1{font-size:clamp(2rem,5.5vw,3.8rem);font-weight:800;letter-spacing:-.03em}
+`;
+
+    case 'jovem': return `
+/* ── JOVEM: energia, diagonal, impacto ── */
+.hero{clip-path:polygon(0 0,100% 0,100% 88%,0 100%);padding-bottom:clamp(110px,20vh,220px)!important;min-height:108svh}
+.diag-sec{clip-path:polygon(0 5%,100% 0,100% 95%,0 100%);margin-top:-90px;padding-top:calc(var(--gap) + 90px)!important;padding-bottom:calc(var(--gap) + 50px)!important}
+.agents-sec{clip-path:polygon(0 3%,100% 0,100% 97%,0 100%);padding-top:calc(var(--gap) + 50px)!important}
+.hero-h1{font-size:clamp(3rem,9.5vw,6.5rem);text-transform:uppercase;letter-spacing:.01em;line-height:.88}
+.sec-title{text-transform:uppercase;letter-spacing:.05em;font-size:clamp(1.4rem,3.8vw,2.3rem)}
+.sec-label{letter-spacing:.32em;font-size:.62rem;text-transform:uppercase}
+.btn-primary,.btn-secondary,.nav-cta,.floating-btn{text-transform:uppercase;letter-spacing:.12em;font-size:.76rem!important;border-radius:2px!important}
+.diag-card,.agent-card{border-radius:0!important;border:none!important;border-left:3px solid transparent!important;transition:border-left-color .18s,background .18s,transform .18s}
+.diag-card:hover,.agent-card:hover{border-left-color:var(--ac)!important;transform:translateX(5px)}
+.metric-num{font-size:clamp(3.4rem,7.5vw,5.2rem)!important;letter-spacing:-.04em}
+.metrics-grid{gap:2px}
+.agent-badge{border-radius:0!important;letter-spacing:.14em;font-size:.56rem}
+.urgency-tag{border-radius:2px!important;letter-spacing:.18em}
+.hero-badge{font-size:.62rem;letter-spacing:.28em;text-transform:uppercase}
+.cta-final h2{text-transform:uppercase;letter-spacing:.03em;font-size:clamp(1.8rem,5vw,3.5rem)}
+`;
+
+    case 'amigável': return `
+/* ── AMIGÁVEL: acolhedor, redondo, orgânico ── */
+.diag-card,.agent-card,.metric-card,.social-card{border-radius:22px!important;box-shadow:0 4px 24px rgba(${pRgb},.07)!important;border-color:rgba(${pRgb},.18)!important}
+.diag-card:hover,.agent-card:hover{transform:translateY(-7px);box-shadow:0 18px 52px rgba(${pRgb},.2)!important;border-color:var(--p)!important;transition:transform .25s,box-shadow .25s,border-color .25s}
+.btn-primary,.btn-secondary,.nav-cta,.floating-btn,.hero-badge,.urgency-tag,.agent-badge,.social-resultado{border-radius:50px!important}
+.modal,.toast{border-radius:24px!important}
+.metrics-grid{border-radius:24px!important;overflow:hidden;gap:2px}
+.hero-bg{background:radial-gradient(ellipse at 32% 58%,rgba(${pRgb},.16) 0%,transparent 55%),radial-gradient(ellipse at 72% 20%,rgba(${acRgb},.09) 0%,transparent 50%)!important}
+.hero-grid{opacity:.35}
+.hero-h1{font-weight:800!important;letter-spacing:-.025em;font-size:clamp(2.1rem,6vw,4.4rem)}
+.hero-sub{font-size:clamp(1rem,2.5vw,1.18rem);line-height:1.85}
+.sec-title{font-weight:800!important;font-size:clamp(1.6rem,4vw,2.5rem)}
+.hero-badge{font-size:.7rem;letter-spacing:.07em;border-radius:50px!important}
+.metric-num{font-weight:800!important}
+.api-node{border-radius:16px!important}
+`;
+
+    default: return ''; // técnico — base CSS já adequado
+  }
+}
+
+function getHeroExtras(tom: string, p: string, ac: string): string {
+  if (tom === 'artístico') {
+    return `
+  <div class="art-blob" style="width:480px;height:480px;background:${p};top:-60px;right:-80px"></div>
+  <div class="art-blob" style="width:280px;height:280px;background:${ac};bottom:8%;left:-50px"></div>`;
+  }
+  if (tom === 'premium') {
+    return '<span class="hero-rule"></span>';
+  }
+  return '';
+}
+
+function getSectionRule(tom: string): string {
+  if (tom === 'premium') return '<span class="section-rule"></span>';
+  return '';
+}
+
+function getAgentCardExtra(tom: string, index: number): string {
+  if (tom === 'premium') {
+    const romans = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+    return `<span class="agent-roman">${romans[index] ?? String(index + 1)}</span>`;
+  }
+  return '';
+}
+
 function waLink(phone: string, msg = 'Olá! Gostaria de saber mais sobre a automação de captação.'): string {
   const n = (phone || '').replace(/\D/g, '');
   if (!n) return '#contato';
@@ -212,6 +346,8 @@ function buildHTML(diag: Diagnostico, c: PageContent): string {
   const pLight = lighten(p, 0.12);
   const pRgb = hexToRgb(p);
   const acRgb = hexToRgb(ac);
+  const tom = iv.tom || 'técnico';
+  const personalityCSS = getPersonalityCSS(tom, p, s, txt, bg, ac, pRgb, acRgb);
 
   const city = cityShort(diag.cidade);
   const segLabel = diag.segmento?.nivel2 || diag.categoria;
@@ -244,6 +380,7 @@ function buildHTML(diag: Diagnostico, c: PageContent): string {
 
   const agentCards = agentes.map((a, i) => `
     <div class="agent-card" style="--d:${i * 0.1}s">
+      ${getAgentCardExtra(tom, i)}
       <div class="agent-ico">${a.icone}</div>
       <div class="agent-badge"><span class="badge-dot"></span>ATIVO</div>
       <h3 class="agent-nome">${a.nome}</h3>
@@ -459,6 +596,7 @@ footer{background:rgba(${pRgb},.05);border-top:1px solid rgba(${pRgb},.1);paddin
 /* ─── SCROLL ANIMATIONS ─── */
 .fade-up{opacity:0;transform:translateY(24px);transition:opacity .5s ease,transform .5s ease}
 .fade-up.visible{opacity:1;transform:none}
+${personalityCSS}
 </style>
 </head>
 <body>
@@ -482,6 +620,7 @@ footer{background:rgba(${pRgb},.05);border-top:1px solid rgba(${pRgb},.1);paddin
   <div class="hero-bg"></div>
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
+  ${getHeroExtras(tom, p, ac)}
   <div class="hero-content">
     <div class="hero-badge">${segLabel} · ${city}</div>
     <h1 class="hero-h1">${c.headline_hero.replace(diag.nome, `<span class="accent">${diag.nome}</span>`)}</h1>
@@ -518,6 +657,7 @@ footer{background:rgba(${pRgb},.05);border-top:1px solid rgba(${pRgb},.1);paddin
     <div class="section-header center">
       <span class="sec-label">inteligência artificial</span>
       <h2 class="sec-title">7 agentes trabalhando para ${diag.nome}</h2>
+      ${getSectionRule(tom)}
     </div>
     <div class="agents-grid">${agentCards}</div>
   </div>
@@ -529,6 +669,7 @@ footer{background:rgba(${pRgb},.05);border-top:1px solid rgba(${pRgb},.1);paddin
     <div class="section-header center fade-up">
       <span class="sec-label">resultados comprovados</span>
       <h2 class="sec-title">O que nossos clientes conquistam em 90 dias</h2>
+      ${getSectionRule(tom)}
     </div>
     <div class="metrics-grid">${metricCards}</div>
   </div>
@@ -557,6 +698,7 @@ footer{background:rgba(${pRgb},.05);border-top:1px solid rgba(${pRgb},.1);paddin
     <div class="section-header center fade-up">
       <span class="sec-label">casos reais</span>
       <h2 class="sec-title">Negócios do mesmo segmento já automatizaram</h2>
+      ${getSectionRule(tom)}
     </div>
     <div class="social-carousel">
       <div class="social-track" id="socialTrack">${socialCards}</div>
