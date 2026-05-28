@@ -45,6 +45,49 @@ function lighten(hex: string, amount = 0.15): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// VALIDAÇÃO DE CONTRASTE WCAG — garante legibilidade mínima antes de renderizar
+// ─────────────────────────────────────────────────────────────────────────────
+function getLuminance(hex: string): number {
+  const h = hex.replace('#', '').padEnd(6, '0');
+  const r = parseInt(h.substring(0, 2), 16) / 255;
+  const g = parseInt(h.substring(2, 4), 16) / 255;
+  const b = parseInt(h.substring(4, 6), 16) / 255;
+  const lin = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+function contrastRatio(hex1: string, hex2: string): number {
+  const l1 = getLuminance(hex1);
+  const l2 = getLuminance(hex2);
+  const lighter = Math.max(l1, l2);
+  const darker  = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function ensureContrast(iv: IdentidadeVisual): IdentidadeVisual {
+  const result = { ...iv };
+  const bgLum = getLuminance(result.cor_fundo);
+  const isDark = bgLum < 0.35;
+
+  // cor_texto vs cor_fundo — mínimo 4.5:1 (WCAG AA)
+  if (contrastRatio(result.cor_texto, result.cor_fundo) < 4.5) {
+    result.cor_texto = isDark ? '#f1f5f9' : '#0f172a';
+  }
+
+  // cor_acento vs cor_fundo — mínimo 3:1 (botões e badges precisam ser visíveis)
+  if (contrastRatio(result.cor_acento, result.cor_fundo) < 3) {
+    result.cor_acento = isDark ? '#fbbf24' : '#0284c7';
+  }
+
+  // cor_primaria vs cor_fundo — mínimo 2:1 (gradientes e cards)
+  if (contrastRatio(result.cor_primaria, result.cor_fundo) < 1.5) {
+    result.cor_primaria = isDark ? lighten(result.cor_fundo, 0.25) : '#1e293b';
+  }
+
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PERSONALIDADES DE DESIGN — cada tom gera um visual genuinamente diferente
 // ─────────────────────────────────────────────────────────────────────────────
 function getPersonalityCSS(
@@ -149,7 +192,29 @@ function getPersonalityCSS(
 .api-node{border-radius:16px!important}
 `;
 
-    default: return ''; // técnico — base CSS já adequado
+    case 'técnico': return `
+/* ── TÉCNICO: terminal, data-driven, preciso ── */
+.sec-label{font-family:monospace;font-size:.64rem;letter-spacing:.2em}
+.sec-label::before{content:'> ';color:var(--ac)}
+.hero-badge{font-family:monospace;font-size:.66rem;letter-spacing:.1em;border-radius:3px!important}
+.hero-badge::before{border-radius:0!important;width:7px;height:7px}
+.agent-badge{border-radius:2px!important;font-family:monospace;font-size:.57rem;letter-spacing:.12em}
+.badge-dot{border-radius:0!important}
+.diag-card{border-top:1px solid rgba(${acRgb},.2)!important;transition:border-top-color .2s,background .2s}
+.diag-card:hover{border-top-color:var(--ac)!important}
+.agent-card{border:1px solid rgba(${pRgb},.18)!important;transition:border-color .2s,background .2s}
+.agent-card:hover{border-color:rgba(${pRgb},.5)!important;border-top-color:var(--ac)!important}
+.metric-num{font-family:monospace;letter-spacing:-.02em}
+.metric-label{font-family:monospace;font-size:.8rem!important;letter-spacing:.06em;text-transform:uppercase}
+.metrics-grid{border:1px solid rgba(${pRgb},.15)}
+.metric-card+.metric-card{border-left:1px solid rgba(${pRgb},.1)}
+@media(max-width:600px){.metric-card+.metric-card{border-left:none;border-top:1px solid rgba(${pRgb},.1)}}
+.hero-grid{opacity:.55}
+.api-center::after{font-family:monospace}
+.hero-h1{letter-spacing:-.03em;font-weight:800}
+`;
+
+    default: return '';
   }
 }
 
@@ -329,10 +394,10 @@ function fallbackContent(diag: Diagnostico): PageContent {
 // HTML BUILDER — template universal premium
 // ─────────────────────────────────────────────────────────────────────────────
 function buildHTML(diag: Diagnostico, c: PageContent): string {
-  const iv: IdentidadeVisual = diag.identidade_visual || {
+  const iv: IdentidadeVisual = ensureContrast(diag.identidade_visual || {
     cor_primaria: '#1e293b', cor_secundaria: '#0f172a', cor_texto: '#ffffff',
     cor_fundo: '#0f172a', cor_acento: '#3b82f6', tom: 'técnico', tipografia: 'sans-moderna',
-  };
+  });
 
   const tip = iv.tipografia || 'sans-moderna';
   const fontsUrl = getFonts(tip);
