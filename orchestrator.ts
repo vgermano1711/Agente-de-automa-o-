@@ -10,6 +10,7 @@ import { runAgent4 } from './agents/agent4_video';
 import { runAgent5 } from './agents/agent5_canal';
 import { runAgent6 } from './agents/agent6_revisor';
 import { startAgent7Loop } from './agents/agent7_handler';
+import { processarCadencias } from './agents/cadencia';
 import { initWhatsappWeb } from './utils/whatsapp';
 
 import { log } from './utils/logger';
@@ -213,6 +214,14 @@ startAgent7Loop({ intervalMinutes: config.intervalo_agent7_minutos || 5 });
 // Agendamento automático via cron
 const cronSchedule = process.env.CRON_SCHEDULE || config.horario_ciclo || '0 8 * * *';
 log.info(`⏰ Pipeline agendado: "${cronSchedule}" (padrão: 08:00 todos os dias)`);
+
+// Cadência de follow-up — processa follow-ups todo dia às 10h
+cron.schedule('0 10 * * *', () => {
+  processarCadencias().catch((err: Error) => {
+    log.error(`Cadência — erro ao processar: ${err.message}`);
+  });
+});
+log.info('⏰ Cadência agendada: 10:00 todos os dias');
 
 // Inicialização principal — WhatsApp primeiro, depois cron
 (async () => {

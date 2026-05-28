@@ -236,14 +236,14 @@ function buildHTML(diag: Diagnostico, c: PageContent): string {
   ];
 
   const diagItems = (c.diagnostico_itens || []).map((item, i) => `
-    <div class="diag-card" style="animation-delay:${i * 0.12}s">
+    <div class="diag-card" style="--d:${i * 0.12}s">
       <div class="diag-ico">${item.icone}</div>
       <h3 class="diag-problema">${item.problema}</h3>
       <p class="diag-impacto">${item.impacto}</p>
     </div>`).join('');
 
   const agentCards = agentes.map((a, i) => `
-    <div class="agent-card" style="animation-delay:${i * 0.1}s">
+    <div class="agent-card" style="--d:${i * 0.1}s">
       <div class="agent-ico">${a.icone}</div>
       <div class="agent-badge"><span class="badge-dot"></span>ATIVO</div>
       <h3 class="agent-nome">${a.nome}</h3>
@@ -251,7 +251,7 @@ function buildHTML(diag: Diagnostico, c: PageContent): string {
     </div>`).join('');
 
   const metricCards = (c.metricas || []).map((m, i) => `
-    <div class="metric-card" style="animation-delay:${i * 0.08}s">
+    <div class="metric-card" style="--d:${i * 0.08}s">
       <div class="metric-num">
         <span class="counter" data-target="${m.valor}" data-suffix="${m.sufixo}">0</span>
       </div>
@@ -259,12 +259,14 @@ function buildHTML(diag: Diagnostico, c: PageContent): string {
       <div class="metric-periodo">${m.periodo}</div>
     </div>`).join('');
 
-  const apiNodes = apis.map((a, i) => `
+  const apiNodesList = apis.map((a, i) => `
     <div class="api-node api-node-${i}">
       <div class="api-ico">${a.icone}</div>
       <div class="api-nome">${a.nome}</div>
       <div class="api-funcao">${a.funcao}</div>
-    </div>`).join('');
+    </div>`);
+  const apiNodesLeft  = apiNodesList.slice(0, 2).join('');
+  const apiNodesRight = apiNodesList.slice(2).join('');
 
   const socialCards = (c.prova_social || []).map((p, i) => `
     <div class="social-card${i === 0 ? ' active' : ''}" data-index="${i}">
@@ -540,11 +542,11 @@ footer{background:rgba(${pRgb},.05);border-top:1px solid rgba(${pRgb},.1);paddin
       <h2 class="sec-title">5 ferramentas integradas automaticamente</h2>
     </div>
     <div class="api-layout">
-      <div class="api-connections">${apiNodes.slice(0, 2)}</div>
+      <div class="api-connections">${apiNodesLeft}</div>
       <div class="api-arrow">→</div>
       <div class="api-center">🤖 Automação</div>
       <div class="api-arrow">→</div>
-      <div class="api-connections">${apiNodes.slice(2)}</div>
+      <div class="api-connections">${apiNodesRight}</div>
     </div>
   </div>
 </section>
