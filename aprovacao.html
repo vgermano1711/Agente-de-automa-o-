@@ -81,18 +81,100 @@
     .card-body { display: grid; grid-template-columns: 1fr 1fr; }
     @media (max-width: 900px) { .card-body { grid-template-columns: 1fr; } }
 
-    .card-preview { border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .card-preview { border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+    .card-preview > div { width: 100%; }
     .preview-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
 
-    .lp-frame {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      background: #fff;
-      position: relative;
-      height: 280px;
+    /* ── Mobile phone frame para preview da LP ── */
+    .lp-phone-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
-    .lp-frame iframe { width: 100%; height: 100%; border: none; }
+    .lp-phone {
+      position: relative;
+      width: 200px;
+      height: 380px;
+      background: #1a1d2e;
+      border-radius: 32px;
+      border: 2px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04);
+      overflow: hidden;
+    }
+    .lp-phone::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      z-index: 10;
+    }
+    .lp-phone-screen {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow: hidden;
+      border-radius: 30px;
+    }
+    .lp-phone-screen iframe {
+      width: 390px;
+      height: 844px;
+      border: none;
+      transform: scale(0.51);
+      transform-origin: top left;
+      pointer-events: none;
+    }
+    .lp-phone-loader {
+      position: absolute;
+      inset: 0;
+      background: #0d1117;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      transition: opacity .5s;
+      z-index: 5;
+    }
+    .lp-phone-loader.loaded { opacity: 0; pointer-events: none; }
+    .lp-spin {
+      width: 24px; height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .lp-link-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .lp-open-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 4px 10px;
+      border: 1px solid rgba(108,99,255,.3);
+      border-radius: 6px;
+      transition: background .15s;
+    }
+    .lp-open-btn:hover { background: rgba(108,99,255,.12); }
+
     .lp-placeholder {
       height: 280px;
       background: linear-gradient(135deg, #1a1d2e 0%, #2a2d3e 100%);
@@ -617,29 +699,50 @@ async function loadHistorico() {
 
 function renderCard(msg) {
   const score = msg.revisao_score || 75;
-  const lpUrl = msg.landing_page_url;
+  const lpUrl  = msg.landing_page_url;
+  const cardId = msg.id;
 
+  // ── LP Preview: phone mockup com iframe escalado 0.51× (390→200px) ──
   let lpSection;
+  const localPath = `/pages/${escHtml(msg.slug)}/`;
+  const publicUrl = (lpUrl && !lpUrl.startsWith('http://localhost')) ? lpUrl : null;
+
   if (lpUrl) {
+    // Usa sempre o path local para o iframe (mais confiável que o URL público)
     lpSection = `
-      <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-        <a href="${escHtml(lpUrl)}" target="_blank" rel="noopener"
-           style="font-size:0.78rem;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:4px">
-          Abrir site completo ↗
-        </a>
-      </div>
-      <div class="lp-frame"><iframe src="/pages/${escHtml(msg.slug)}/" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe></div>`;
+      <div class="lp-phone-wrap">
+        <div class="lp-phone">
+          <div class="lp-phone-screen">
+            <div class="lp-phone-loader" id="lp-loader-${cardId}">
+              <div class="lp-spin"></div>
+              <span>Carregando prévia…</span>
+            </div>
+            <iframe src="${localPath}"
+              onload="document.getElementById('lp-loader-${cardId}')?.classList.add('loaded')"
+              onerror="document.getElementById('lp-loader-${cardId}').innerHTML='<span style=\\'color:#ef4444\\'>❌ Página não encontrada localmente</span>'"
+              allow=""></iframe>
+          </div>
+        </div>
+        <div class="lp-link-row">
+          <a class="lp-open-btn" href="${localPath}" target="_blank" rel="noopener">🖥 Ver local ↗</a>
+          ${publicUrl ? `<a class="lp-open-btn" href="${escHtml(publicUrl)}" target="_blank" rel="noopener">🌐 Ver online ↗</a>` : ''}
+        </div>
+      </div>`;
   } else {
     lpSection = `<div class="lp-placeholder">
       🌐
-      <span>Landing page ${isLive ? 'não disponível localmente' : '(disponível após deploy)'}</span>
-      ${lpUrl ? `<a href="${escHtml(lpUrl)}" target="_blank" rel="noopener">Abrir link ↗</a>` : ''}
+      <span>Landing page não disponível</span>
+      <small>Rode o Agente 3 para gerar</small>
     </div>`;
   }
 
+  // ── Vídeo: player compacto ou placeholder informativo ──
   const videoSection = msg.video_path
-    ? `<video style="width:100%;border-radius:8px;background:#000;max-height:180px" src="/videos/${escHtml(msg.slug)}.mp4" controls muted preload="metadata"></video>`
-    : `<div class="video-placeholder">🎬 <span>Vídeo gerado após rodar o Agente 4</span></div>`;
+    ? `<video style="width:100%;max-width:200px;border-radius:12px;background:#000;display:block;margin:0 auto"
+         src="/videos/${escHtml(msg.slug)}.mp4"
+         controls muted preload="metadata"
+         title="Prévia de scroll — ${escHtml(msg.nome_negocio)}"></video>`
+    : `<div class="video-placeholder" style="border-radius:8px;height:120px">🎬 <span>Vídeo gerado pelo Agente 4</span></div>`;
 
   return `<div class="card" id="card-${msg.id}">
     <div class="card-header">

@@ -1,10 +1,19 @@
 /**
  * Agente 4 — Criador de Vídeo de Prévia
- * Usa Puppeteer para screenshots mobile, combina com ffmpeg em vídeo vertical de 10s,
- * salva em /videos/{slug}.mp4.
+ *
+ * Estratégia: tira um screenshot full-page da landing page (via Puppeteer) e usa ffmpeg
+ * para criar um vídeo de scroll suave de 12s — simula alguém navegando no celular.
+ *
+ * Fixes críticos vs versão anterior:
+ *  - usa pathToFileURL() para URLs file:// corretas no Windows (C:\... → file:///C:/...)
+ *  - bloqueia Google Fonts para evitar que networkidle0 congele
+ *  - injeta fallback fonts para garantir que o texto seja visível sempre
+ *  - ffmpeg sem fontfile hardcoded (cross-platform, sem depender de Arial no Windows)
+ *  - screenshot full-page + scroll animation = preview profissional e autêntico
  */
 
 import puppeteer from 'puppeteer';
+import { pathToFileURL } from 'url';
 import { execSync, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -12,111 +21,165 @@ import { Diagnostico } from '../types';
 import { log } from '../utils/logger';
 import { dataPath, readJson } from '../utils/dataHelpers';
 
-async function takeScreenshots(diag: Diagnostico): Promise<string[]> {
-  const screenshotsDir = path.join(process.cwd(), 'videos', 'tmp', diag.slug);
-  if (!fs.existsSync(screenshotsDir)) fs.mkdirSync(screenshotsDir, { recursive: true });
+// Viewport mobile padrão (iPhone 14 Pro)
+const VIEWPORT_W = 390;
+const VIEWPORT_H = 844;
+const SCALE      = 2;   // deviceScaleFactor → imagem nativa 780×1688+
 
+async function takeFullPageScreenshot(diag: Diagnostico): Promise<string | null> {
   const pageFile = diag.landing_page_path;
   if (!pageFile || !fs.existsSync(pageFile)) {
-    log.warn(`Página não encontrada para ${diag.nome}, usando screenshot placeholder`);
-    return [];
+    log.warn(`  ⚠ Página não encontrada para ${diag.nome}: ${pageFile}`);
+    return null;
   }
 
-  const fileUrl = `file://${pageFile}`;
-  const screenshots: string[] = [];
+  const tmpDir = path.join(process.cwd(), 'videos', 'tmp', diag.slug);
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+  // pathToFileURL gera URL correta em qualquer OS:
+  //   Windows: C:\Users\... → file:///C:/Users/...
+  //   Linux:   /home/...    → file:///home/...
+  const fileUrl = pathToFileURL(pageFile).href;
+  const outputPng = path.join(tmpDir, 'fullpage.png');
 
   let browser;
   try {
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-web-security',
+        '--ignore-certificate-errors',
+        '--disable-features=IsolateOrigins,site-per-process',
+      ],
     });
+
     const page = await browser.newPage();
-    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
-    await page.goto(fileUrl, { waitUntil: 'networkidle0', timeout: 15000 });
+    await page.setViewport({ width: VIEWPORT_W, height: VIEWPORT_H, deviceScaleFactor: SCALE });
 
-    // Screenshot 1: topo (hero)
-    const s1 = path.join(screenshotsDir, '01.png');
-    await page.screenshot({ path: s1 });
-    screenshots.push(s1);
+    // Bloqueia Google Fonts: sem isso networkidle0 pode travar esperando CDN externa
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      const url = req.url();
+      if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
 
-    // Screenshot 2: meio (serviços)
-    await page.evaluate(() => { (window as Window).scrollTo(0, 600); });
-    await new Promise((r) => setTimeout(r, 300));
-    const s2 = path.join(screenshotsDir, '02.png');
-    await page.screenshot({ path: s2 });
-    screenshots.push(s2);
+    await page.goto(fileUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
-    // Screenshot 3: CTA final
-    await page.evaluate(() => { (window as Window).scrollTo(0, (document as Document).body.scrollHeight); });
-    await new Promise((r) => setTimeout(r, 300));
-    const s3 = path.join(screenshotsDir, '03.png');
-    await page.screenshot({ path: s3 });
-    screenshots.push(s3);
+    // Deixa CSS e animações terminarem
+    await new Promise((r) => setTimeout(r, 2000));
+
+    // Injeta fontes web-safe como fallback (garante que o texto seja visível mesmo sem Google Fonts)
+    await page.addStyleTag({
+      content: `
+        @font-face { font-family: 'Playfair Display'; src: local('Georgia'); }
+        @font-face { font-family: 'Cormorant Garamond'; src: local('Georgia'); }
+        @font-face { font-family: 'Inter'; src: local('Arial'); }
+      `,
+    });
+
+    // Aguarda qualquer reflow depois do style inject
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Screenshot full-page → imagem alta (tipicamente 780 × 5000-8000 px)
+    await page.screenshot({ path: outputPng, fullPage: true });
+
+    log.info(`    Screenshot: ${outputPng}`);
+    return outputPng;
   } catch (err) {
     log.error(`Puppeteer falhou para ${diag.nome}: ${(err as Error).message}`);
+    return null;
   } finally {
     if (browser) await browser.close();
   }
-
-  return screenshots;
 }
 
 function ffmpegAvailable(): boolean {
+  try { execSync('ffmpeg -version', { stdio: 'ignore' }); return true; }
+  catch { return false; }
+}
+
+function getImageHeight(imgPath: string): number {
   try {
-    execSync('ffmpeg -version', { stdio: 'ignore' });
-    return true;
+    const result = spawnSync('ffprobe', [
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=height',
+      '-of', 'csv=p=0',
+      imgPath,
+    ], { encoding: 'utf-8', timeout: 10000 });
+    return parseInt(result.stdout?.trim() || '0', 10) || 0;
   } catch {
-    return false;
+    return 0;
   }
 }
 
-function createVideo(diag: Diagnostico, screenshots: string[]): string | null {
+function createScrollVideo(diag: Diagnostico, screenshotPath: string): string | null {
   const videosDir = path.join(process.cwd(), 'videos');
   if (!fs.existsSync(videosDir)) fs.mkdirSync(videosDir, { recursive: true });
 
   const outputPath = path.join(videosDir, `${diag.slug}.mp4`);
 
-  if (screenshots.length === 0 || !ffmpegAvailable()) {
-    log.warn(`ffmpeg indisponível ou sem screenshots para ${diag.nome} — vídeo não gerado`);
+  if (!ffmpegAvailable()) {
+    log.warn(`ffmpeg não encontrado — instale com: apt install ffmpeg (Linux) ou scoop install ffmpeg (Windows)`);
     return null;
   }
 
-  try {
-    // Cria lista de inputs para concat
-    const listFile = path.join(process.cwd(), 'videos', 'tmp', diag.slug, 'list.txt');
-    const duration = Math.floor(10 / screenshots.length);
-    const listContent = screenshots.map((s) => `file '${s}'\nduration ${duration}`).join('\n');
-    fs.writeFileSync(listFile, listContent);
+  const imgH    = getImageHeight(screenshotPath);
+  const nativeH = VIEWPORT_H * SCALE; // 1688 px
+  const nativeW = VIEWPORT_W * SCALE; // 780 px
 
-    const drawtext = `drawtext=fontfile='C\\:/Windows/Fonts/arialbd.ttf':text='Sua empresa pode ter isso':fontcolor=white:fontsize=28:x=(w-text_w)/2:y=h-80:box=1:boxcolor=black@0.6:boxborderw=10`;
+  const duration  = 12;
+  const scrollPx  = Math.max(imgH - nativeH, 0);
 
-    const result = spawnSync(
-      'ffmpeg',
-      [
-        '-y',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', listFile,
-        '-vf', `scale=390:844:force_original_aspect_ratio=decrease,pad=390:844:(ow-iw)/2:(oh-ih)/2,${drawtext},fade=t=in:st=0:d=0.5,fade=t=out:st=9:d=0.5`,
-        '-c:v', 'libx264',
-        '-pix_fmt', 'yuv420p',
-        '-t', '10',
-        outputPath,
-      ],
-      { encoding: 'utf-8', timeout: 60000 }
-    );
+  // filtro de scroll: desloca y de 0 → scrollPx durante 'duration' segundos
+  // se a página for curta (scrollPx=0) apenas exibe a viewport sem mover
+  const scrollExpr = scrollPx > 0
+    ? `min(t/${duration}*${scrollPx}\\,${scrollPx})`
+    : '0';
 
-    if (result.status !== 0) {
-      log.error(`ffmpeg erro: ${result.stderr}`);
-      return null;
-    }
+  const vf = [
+    // 1. Garante largura nativa (no caso de screenshot com escala diferente)
+    `scale=${nativeW}:-2`,
+    // 2. Janela deslizante — simula scroll
+    `crop=${nativeW}:${nativeH}:0:'${scrollExpr}'`,
+    // 3. Reduz para tamanho de exibição 390×844
+    `scale=${VIEWPORT_W}:${VIEWPORT_H}`,
+    // 4. Fade in/out suave
+    `fade=t=in:st=0:d=0.8`,
+    `fade=t=out:st=${duration - 0.8}:d=0.8`,
+  ].join(',');
 
-    return outputPath;
-  } catch (err) {
-    log.error(`Criação de vídeo falhou: ${(err as Error).message}`);
+  const result = spawnSync(
+    'ffmpeg',
+    [
+      '-y',
+      '-loop', '1',
+      '-framerate', '30',
+      '-i', screenshotPath,
+      '-vf', vf,
+      '-c:v', 'libx264',
+      '-preset', 'fast',
+      '-crf', '23',
+      '-pix_fmt', 'yuv420p',
+      '-t', String(duration),
+      '-movflags', '+faststart',
+      outputPath,
+    ],
+    { encoding: 'utf-8', timeout: 120000 }
+  );
+
+  if (result.status !== 0) {
+    log.error(`ffmpeg erro para ${diag.nome}:\n${result.stderr?.slice(-800)}`);
     return null;
   }
+
+  return outputPath;
 }
 
 export async function runAgent4(): Promise<void> {
@@ -130,11 +193,25 @@ export async function runAgent4(): Promise<void> {
   }
 
   for (const diag of diagnosticos) {
+    if (!diag.landing_page_path) {
+      log.warn(`  ↷ ${diag.nome} — sem landing_page_path, pulando`);
+      continue;
+    }
+    if (!fs.existsSync(diag.landing_page_path)) {
+      log.warn(`  ↷ ${diag.nome} — arquivo não encontrado: ${diag.landing_page_path}`);
+      continue;
+    }
+
     log.info(`  Gerando vídeo para ${diag.nome}...`);
-    const screenshots = await takeScreenshots(diag);
-    const videoPath = createVideo(diag, screenshots);
+
+    const screenshotPath = await takeFullPageScreenshot(diag);
+    if (!screenshotPath) continue;
+
+    const videoPath = createScrollVideo(diag, screenshotPath);
+
     if (videoPath) {
-      log.info(`  ✓ ${diag.nome} → ${videoPath}`);
+      const sizeMb = (fs.statSync(videoPath).size / 1024 / 1024).toFixed(1);
+      log.info(`  ✓ ${diag.nome} → ${videoPath} (${sizeMb} MB)`);
     } else {
       log.warn(`  ⚠ Vídeo não gerado para ${diag.nome}`);
     }
