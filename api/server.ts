@@ -509,6 +509,19 @@ app.post('/api/cadencia/processar', async (_req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// POST /api/whatsapp/send — envia WhatsApp via sessão gerenciada pela API
+// Usado pelo orchestrator/cadência que rodam em processo separado
+app.post('/api/whatsapp/send', async (req, res) => {
+  const { phone, message } = req.body as { phone?: string; message?: string };
+  if (!phone || !message) return res.status(400).json({ error: 'phone e message obrigatórios' });
+  try {
+    const ok = await sendWhatsApp(phone, message);
+    res.json({ success: ok });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 // Redirecionar raiz para o painel
 app.get('/', (_req, res) => {
   res.sendFile(path.join(process.cwd(), 'aprovacao.html'));

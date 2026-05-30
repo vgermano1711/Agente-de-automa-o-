@@ -222,15 +222,8 @@ cron.schedule('0 10 * * *', () => {
 });
 log.info('⏰ Cadência agendada: 10:00 todos os dias');
 
-// Inicialização principal — WhatsApp primeiro, depois Agent 7 e cron
+// Inicialização principal — a API gerencia o WhatsApp; orchestrator nunca inicializa
 (async () => {
-  // WhatsApp só é inicializado no modo servidor contínuo.
-  // Em --run-now o API server (npm run dev:api) já gerencia a sessão WhatsApp —
-  // inicializar aqui causaria conflito de sessão (.wwebjs_auth já em uso).
-  if (!process.argv.includes('--run-now')) {
-    await initWhatsApp();
-  }
-
   // Agente 7 só inicia após o WhatsApp estar pronto para não perder mensagens
   startAgent7Loop({ intervalMinutes: config.intervalo_agent7_minutos || 5 });
 

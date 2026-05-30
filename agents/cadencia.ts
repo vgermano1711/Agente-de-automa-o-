@@ -15,12 +15,23 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import nodemailer from 'nodemailer';
+import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
 import { CadenciaLead, FollowUpEntry, Diagnostico, Mensagem } from '../types';
 import { log } from '../utils/logger';
 import { readJson, writeJson, today } from '../utils/dataHelpers';
-import { sendWhatsApp } from '../utils/whatsapp';
+
+async function sendWhatsAppViaCadencia(phone: string, message: string): Promise<boolean> {
+  const apiPort = process.env.PORT || '3000';
+  try {
+    const resp = await axios.post(`http://localhost:${apiPort}/api/whatsapp/send`, { phone, message }, { timeout: 15000 });
+    return resp.data?.success === true;
+  } catch (err) {
+    log.error(`  [cadência] Falha ao chamar API WhatsApp: ${(err as Error).message}`);
+    return false;
+  }
+}
 
 let _mailer: nodemailer.Transporter | null = null;
 function getMailer(): nodemailer.Transporter | null {
@@ -205,13 +216,9 @@ export async function processarCadencias(): Promise<void> {
     // Enviar pelo canal da etapa
     const canal = etapa === 7 ? lead.canal_secundario : lead.canal_primario;
     if (canal === 'whatsapp' && lead.telefone) {
-      try {
-        await sendWhatsApp(lead.telefone, mensagem);
-        enviado = true;
-        log.info(`  ✓ WhatsApp enviado para ${lead.nome_negocio}`);
-      } catch (err) {
-        log.error(`  ✗ Erro WhatsApp ${lead.nome_negocio}: ${(err as Error).message}`);
-      }
+      enviado = await sendWhatsAppViaCadencia(lead.telefone, mensagem);
+      if (enviado) log.info(`  ✓ WhatsApp enviado para ${lead.nome_negocio}`);
+      else log.error(`  ✗ Erro WhatsApp ${lead.nome_negocio}`);
     } else if (canal === 'email') {
       enviado = await sendFollowUpEmail(lead, mensagem);
       if (enviado) log.info(`  ✓ Email enviado para ${lead.nome_negocio}`);
