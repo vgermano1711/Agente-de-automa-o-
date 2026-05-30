@@ -2,40 +2,328 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="30">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WhatsApp — Vincular conta</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; min-height: 100vh;
-      background: #111b21; font-family: 'Segoe UI', sans-serif; color: #e9edef;
+      background: #111b21; font-family: 'Segoe UI', system-ui, sans-serif; color: #e9edef;
+      padding: 24px;
     }
     .card {
-      background: #202c33; border-radius: 20px; padding: 40px;
-      display: flex; flex-direction: column; align-items: center; gap: 20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      background: #202c33; border-radius: 20px; padding: 36px 40px;
+      display: flex; flex-direction: column; align-items: center; gap: 22px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      max-width: 440px; width: 100%;
     }
-    h1 { font-size: 1.4rem; color: #00a884; }
-    img { border-radius: 12px; background: white; padding: 12px; }
-    .steps { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .steps li { font-size: 0.95rem; color: #8696a0; }
-    .steps li span { color: #e9edef; font-weight: 600; }
-    .tip { font-size: 0.8rem; color: #8696a0; margin-top: 8px; }
+    h1 { font-size: 1.35rem; color: #00a884; text-align: center; }
+    .subtitle { font-size: 0.9rem; color: #8696a0; text-align: center; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 0; border-radius: 10px; overflow: hidden;
+      border: 1px solid #2a3942; width: 100%;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px; border: none; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; transition: background .2s;
+      background: #2a3942; color: #8696a0;
+    }
+    .tab-btn.active { background: #00a884; color: #fff; }
+
+    /* ── QR Panel ── */
+    #panel-qr { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; }
+    #panel-phone { display: none; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+
+    .qr-wrap {
+      width: 260px; height: 260px; border-radius: 14px;
+      background: #fff; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    canvas { border-radius: 10px; }
+
+    .qr-status {
+      font-size: 0.85rem; color: #8696a0; text-align: center; min-height: 20px;
+    }
+    .qr-status.ok    { color: #00a884; }
+    .qr-status.error { color: #ef4444; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #2a3942; border-top-color: #00a884;
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .connected-icon { font-size: 4rem; }
+
+    /* ── Steps ── */
+    ol.steps { list-style: none; display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 0 4px; }
+    ol.steps li { font-size: 0.88rem; color: #8696a0; display: flex; gap: 10px; align-items: flex-start; }
+    ol.steps li .num { color: #00a884; font-weight: 700; flex-shrink: 0; min-width: 18px; }
+    ol.steps li span { color: #e9edef; }
+
+    /* ── Phone pairing ── */
+    .phone-input-wrap { width: 100%; }
+    .phone-label { font-size: 0.82rem; color: #8696a0; margin-bottom: 8px; display: block; }
+    .phone-input {
+      width: 100%; padding: 12px 14px;
+      background: #2a3942; border: 1px solid #3b4a54; border-radius: 10px;
+      color: #e9edef; font-size: 1rem; outline: none; transition: border .2s;
+    }
+    .phone-input:focus { border-color: #00a884; }
+    .phone-input::placeholder { color: #8696a0; }
+    .btn-pair {
+      width: 100%; padding: 13px;
+      background: #00a884; border: none; border-radius: 10px;
+      color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-pair:hover { opacity: .88; }
+    .btn-pair:disabled { opacity: .45; cursor: not-allowed; }
+
+    .pairing-code-box {
+      width: 100%; background: #2a3942; border-radius: 12px;
+      padding: 20px; text-align: center; display: none; flex-direction: column; gap: 8px;
+    }
+    .pairing-code-box.show { display: flex; }
+    .code-label { font-size: 0.8rem; color: #8696a0; }
+    .code-value { font-size: 2.2rem; font-weight: 700; color: #00a884; letter-spacing: .18em; }
+    .code-hint { font-size: 0.8rem; color: #8696a0; }
+
+    /* ── Tip ── */
+    .tip { font-size: 0.75rem; color: #8696a0; text-align: center; }
+
+    /* ── Error / Zapi banner ── */
+    .banner {
+      width: 100%; padding: 12px 16px; border-radius: 10px;
+      font-size: 0.85rem; text-align: center;
+    }
+    .banner.info    { background: #1d2d35; border: 1px solid #3b4a54; color: #8696a0; }
+    .banner.success { background: #12352a; border: 1px solid #00a88444; color: #00a884; }
+    .banner.error   { background: #3b1212; border: 1px solid #ef444444; color: #ef4444; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>📱 Vincular WhatsApp ao sistema</h1>
-    <img src="data:image/png;base64,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" width="280" height="280" alt="QR Code WhatsApp" />
-    <ol class="steps">
-      <li>1. Abra o <span>WhatsApp</span> no seu celular</li>
-      <li>2. Toque em <span>Menu ⋮</span> (Android) ou <span>Configurações</span> (iPhone)</li>
-      <li>3. Toque em <span>Dispositivos conectados</span></li>
-      <li>4. Toque em <span>Conectar dispositivo</span></li>
-      <li>5. <span>Aponte a câmera para este QR Code</span></li>
-    </ol>
-    <p class="tip">Esta página atualiza automaticamente a cada 30 segundos.<br>O QR expira em ~60 segundos — se expirar, salve e reabra o arquivo.</p>
+<div class="card">
+  <h1>📱 Vincular WhatsApp ao sistema</h1>
+  <div class="subtitle" id="subtitle">Escolha como quer conectar sua conta</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('qr',this)">📷 QR Code</button>
+    <button class="tab-btn"        onclick="switchTab('phone',this)">📞 Número</button>
   </div>
+
+  <!-- ── QR Panel ── -->
+  <div id="panel-qr">
+    <div class="qr-wrap" id="qr-wrap">
+      <div class="spinner" id="qr-spinner"></div>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+      <div id="qr-connected" style="display:none;flex-direction:column;align-items:center;gap:8px">
+        <div class="connected-icon">✅</div>
+        <span style="color:#00a884;font-weight:700">Conectado!</span>
+      </div>
+    </div>
+    <div class="qr-status" id="qr-status">Aguardando QR Code do servidor…</div>
+
+    <ol class="steps" id="qr-steps">
+      <li><span class="num">1.</span><span>Abra o <span>WhatsApp</span> no celular</span></li>
+      <li><span class="num">2.</span><span>Toque em <span>Menu ⋮</span> (Android) ou <span>Configurações</span> (iPhone)</span></li>
+      <li><span class="num">3.</span><span>Toque em <span>Dispositivos conectados</span></span></li>
+      <li><span class="num">4.</span><span>Toque em <span>Conectar dispositivo</span></span></li>
+      <li><span class="num">5.</span><span>Aponte a câmera para o QR Code acima</span></li>
+    </ol>
+  </div>
+
+  <!-- ── Phone Panel ── -->
+  <div id="panel-phone">
+    <div class="banner info" id="phone-banner">
+      Insira o número do WhatsApp que você quer vincular.<br>O sistema gerará um código de 8 caracteres.
+    </div>
+
+    <div class="phone-input-wrap">
+      <label class="phone-label">Número do WhatsApp (com DDD)</label>
+      <input class="phone-input" id="phone-input" type="tel"
+        placeholder="Ex: (11) 99999-9999"
+        onkeydown="if(event.key==='Enter') solicitarCodigo()" />
+    </div>
+
+    <button class="btn-pair" id="btn-pair" onclick="solicitarCodigo()">Gerar código de vinculação</button>
+
+    <div class="pairing-code-box" id="pairing-box">
+      <div class="code-label">Seu código de vinculação</div>
+      <div class="code-value" id="pairing-code">– – – – – – – –</div>
+      <div class="code-hint">
+        No WhatsApp do celular:<br>
+        Configurações → Dispositivos conectados → Vincular com número de telefone<br>
+        → Digite o código acima
+      </div>
+    </div>
+
+    <ol class="steps">
+      <li><span class="num">1.</span><span>Insira seu número de WhatsApp acima</span></li>
+      <li><span class="num">2.</span><span>Clique em <span>Gerar código</span></span></li>
+      <li><span class="num">3.</span><span>No celular: <span>Configurações → Dispositivos conectados → Vincular com número</span></span></li>
+      <li><span class="num">4.</span><span>Digite os 8 caracteres mostrados aqui</span></li>
+    </ol>
+  </div>
+
+  <div class="tip">
+    Acesse o painel de aprovação em
+    <a href="/" style="color:#00a884;text-decoration:none">localhost:3000</a>
+  </div>
+</div>
+
+<script>
+const API_BASE = '';   // mesmo servidor
+let pollTimer   = null;
+let lastQrStr   = null;
+let activeTab   = 'qr';
+
+function switchTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-qr').style.display    = tab === 'qr'    ? 'flex' : 'none';
+  document.getElementById('panel-phone').style.display = tab === 'phone' ? 'flex' : 'none';
+}
+
+// ── QR polling ────────────────────────────────────────────────────────────
+async function pollQr() {
+  try {
+    const r    = await fetch(API_BASE + '/api/whatsapp-qr');
+    const data = await r.json();
+
+    if (data.status === 'connected') {
+      showConnected();
+      return; // stop polling
+    }
+
+    if (data.status === 'zapi') {
+      setStatus('WhatsApp gerenciado via Z-API. Não é necessário vincular aqui.', 'ok');
+      showZapiBanner();
+      return;
+    }
+
+    if (data.status === 'qr_ready' && data.qr_string) {
+      if (data.qr_string !== lastQrStr) {
+        lastQrStr = data.qr_string;
+        await renderQr(data.qr_string);
+      }
+      setStatus('Escaneie com o WhatsApp do seu celular', 'ok');
+    } else {
+      setStatus('Aguardando QR Code do servidor…');
+      showSpinner();
+    }
+  } catch {
+    setStatus('Servidor não detectado — inicie: npm run dev:api', 'error');
+  }
+
+  pollTimer = setTimeout(pollQr, 5000);
+}
+
+async function renderQr(qrStr) {
+  const canvas  = document.getElementById('qr-canvas');
+  const spinner = document.getElementById('qr-spinner');
+  const connected = document.getElementById('qr-connected');
+
+  try {
+    await QRCode.toCanvas(canvas, qrStr, {
+      width: 240,
+      margin: 2,
+      color: { dark: '#111b21', light: '#ffffff' },
+    });
+    spinner.style.display    = 'none';
+    connected.style.display  = 'none';
+    canvas.style.display     = 'block';
+  } catch (e) {
+    setStatus('Erro ao renderizar QR: ' + e.message, 'error');
+  }
+}
+
+function showSpinner() {
+  document.getElementById('qr-spinner').style.display   = 'block';
+  document.getElementById('qr-canvas').style.display    = 'none';
+  document.getElementById('qr-connected').style.display = 'none';
+}
+
+function showConnected() {
+  clearTimeout(pollTimer);
+  document.getElementById('qr-spinner').style.display   = 'none';
+  document.getElementById('qr-canvas').style.display    = 'none';
+  const conn = document.getElementById('qr-connected');
+  conn.style.display = 'flex';
+  setStatus('WhatsApp conectado com sucesso! ✅', 'ok');
+  document.getElementById('qr-steps').style.display     = 'none';
+  document.getElementById('subtitle').textContent       = 'Conta vinculada — pode fechar esta janela';
+}
+
+function showZapiBanner() {
+  clearTimeout(pollTimer);
+  showSpinner();
+  document.getElementById('qr-wrap').innerHTML = `
+    <div style="text-align:center;padding:20px;color:#00a884;font-size:0.95rem">
+      <div style="font-size:2rem;margin-bottom:10px">⚡</div>
+      Z-API<br><span style="font-size:0.8rem;color:#8696a0">WhatsApp gerenciado externamente</span>
+    </div>`;
+  document.getElementById('qr-steps').style.display = 'none';
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('qr-status');
+  el.textContent = msg;
+  el.className = 'qr-status ' + type;
+}
+
+// ── Phone pairing ──────────────────────────────────────────────────────────
+async function solicitarCodigo() {
+  const phone = document.getElementById('phone-input').value.trim();
+  if (!phone || phone.replace(/\D/g,'').length < 10) {
+    document.getElementById('phone-banner').className = 'banner error';
+    document.getElementById('phone-banner').textContent = 'Informe um número válido com DDD (ex: 11 99999-9999)';
+    return;
+  }
+
+  const btn = document.getElementById('btn-pair');
+  btn.disabled = true;
+  btn.textContent = 'Gerando código…';
+
+  try {
+    const r    = await fetch(API_BASE + '/api/whatsapp-pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await r.json();
+
+    if (data.code) {
+      const box  = document.getElementById('pairing-box');
+      const code = document.getElementById('pairing-code');
+      // Format as "ABCD-EFGH"
+      const raw  = String(data.code).replace(/\s/g,'');
+      code.textContent = raw.length >= 8
+        ? raw.slice(0,4) + ' — ' + raw.slice(4,8)
+        : raw;
+      box.classList.add('show');
+      document.getElementById('phone-banner').className = 'banner success';
+      document.getElementById('phone-banner').textContent = '✅ Código gerado! Digite-o no WhatsApp conforme as instruções abaixo.';
+    } else {
+      throw new Error(data.error || 'Erro desconhecido');
+    }
+  } catch (err) {
+    document.getElementById('phone-banner').className = 'banner error';
+    document.getElementById('phone-banner').textContent = '❌ Erro: ' + err.message;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Gerar código de vinculação';
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+pollQr();
+</script>
 </body>
 </html>

@@ -5,6 +5,7 @@
   "main": "dist/orchestrator.js",
   "scripts": {
     "setup": "node setup.js",
+    "reset": "node reset.js",
     "build": "tsc",
     "start": "npm run build && node dist/orchestrator.js",
     "dev": "ts-node orchestrator.ts",

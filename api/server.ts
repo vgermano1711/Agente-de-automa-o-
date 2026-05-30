@@ -13,7 +13,14 @@ import { google } from 'googleapis';
 import { Mensagem, RespostaLead, CadenciaLead } from '../types';
 import { log } from '../utils/logger';
 import { notifyOwner } from '../utils/notifications';
-import { sendWhatsApp, initWhatsappWeb, whatsappConfigured } from '../utils/whatsapp';
+import {
+  sendWhatsApp,
+  initWhatsappWeb,
+  whatsappConfigured,
+  getLatestQr,
+  isWwjsConnected,
+  requestPairingCode,
+} from '../utils/whatsapp';
 
 const app = express();
 app.use(cors());
@@ -56,8 +63,15 @@ app.get('/api/mensagens', (_req, res) => {
     : [];
 
   const result = msgs.map((m) => {
-    const diag = diags.find((d) => d.slug === m.slug);
-    return { ...m, _telefone: diag?.telefone || '' };
+    const diag          = diags.find((d) => d.slug === m.slug);
+    const lpLocalPath   = path.join(process.cwd(), 'pages', m.slug, 'index.html');
+    const videoLocalPath = path.join(process.cwd(), 'videos', `${m.slug}.mp4`);
+    return {
+      ...m,
+      _telefone: diag?.telefone || '',
+      lp_local_exists: fs.existsSync(lpLocalPath),
+      video_local_exists: fs.existsSync(videoLocalPath),
+    };
   });
   res.json(result);
 });
@@ -65,6 +79,44 @@ app.get('/api/mensagens', (_req, res) => {
 // GET /api/whatsapp-status — estado da conexão WhatsApp
 app.get('/api/whatsapp-status', (_req, res) => {
   res.json({ connected: whatsappConfigured() });
+});
+
+// GET /api/whatsapp-qr — retorna estado e QR string para vinculação
+app.get('/api/whatsapp-qr', (_req, res) => {
+  const provider = process.env.WHATSAPP_PROVIDER || 'zapi';
+
+  if (provider !== 'wwebjs') {
+    return res.json({
+      status: 'zapi',
+      message: 'WhatsApp gerenciado via Z-API — QR não necessário',
+      qr_string: null,
+    });
+  }
+
+  if (whatsappConfigured() || isWwjsConnected()) {
+    return res.json({ status: 'connected', qr_string: null });
+  }
+
+  const qr = getLatestQr();
+  if (qr) {
+    return res.json({ status: 'qr_ready', qr_string: qr });
+  }
+
+  return res.json({ status: 'waiting', qr_string: null });
+});
+
+// POST /api/whatsapp-pair — solicita código de 8 dígitos para vincular por número
+app.post('/api/whatsapp-pair', async (req, res) => {
+  const { phone } = req.body as { phone?: string };
+  if (!phone || phone.replace(/\D/g, '').length < 10) {
+    return res.status(400).json({ error: 'Informe um número de WhatsApp válido (com DDD)' });
+  }
+  try {
+    const code = await requestPairingCode(phone);
+    res.json({ success: true, code });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
 });
 
 // GET /api/status — status geral do sistema

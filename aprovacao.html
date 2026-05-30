@@ -704,11 +704,12 @@ function renderCard(msg) {
 
   // ── LP Preview: phone mockup com iframe escalado 0.51× (390→200px) ──
   let lpSection;
-  const localPath = `/pages/${escHtml(msg.slug)}/`;
-  const publicUrl = (lpUrl && !lpUrl.startsWith('http://localhost')) ? lpUrl : null;
+  const localPath  = `/pages/${escHtml(msg.slug)}/`;
+  const publicUrl  = (lpUrl && !lpUrl.startsWith('http://localhost')) ? lpUrl : null;
+  const lpExists   = msg.lp_local_exists !== false; // true quando API confirma que o arquivo existe
 
-  if (lpUrl) {
-    // Usa sempre o path local para o iframe (mais confiável que o URL público)
+  if (lpUrl && lpExists) {
+    // Página local confirmada — iframe direto
     lpSection = `
       <div class="lp-phone-wrap">
         <div class="lp-phone">
@@ -719,7 +720,6 @@ function renderCard(msg) {
             </div>
             <iframe src="${localPath}"
               onload="document.getElementById('lp-loader-${cardId}')?.classList.add('loaded')"
-              onerror="document.getElementById('lp-loader-${cardId}').innerHTML='<span style=\\'color:#ef4444\\'>❌ Página não encontrada localmente</span>'"
               allow=""></iframe>
           </div>
         </div>
@@ -728,6 +728,15 @@ function renderCard(msg) {
           ${publicUrl ? `<a class="lp-open-btn" href="${escHtml(publicUrl)}" target="_blank" rel="noopener">🌐 Ver online ↗</a>` : ''}
         </div>
       </div>`;
+  } else if (lpUrl && !lpExists) {
+    // URL existe mas arquivo local não — mostra link público se disponível
+    lpSection = `<div class="lp-placeholder">
+      ⏳
+      <span>Página ainda não gerada localmente</span>
+      ${publicUrl
+        ? `<a href="${escHtml(publicUrl)}" target="_blank" rel="noopener">🌐 Ver versão online ↗</a>`
+        : '<small>Execute <code>npm run reset && npm run run-now</code></small>'}
+    </div>`;
   } else {
     lpSection = `<div class="lp-placeholder">
       🌐
@@ -736,13 +745,14 @@ function renderCard(msg) {
     </div>`;
   }
 
-  // ── Vídeo: player compacto ou placeholder informativo ──
-  const videoSection = msg.video_path
+  // ── Vídeo: player real ou placeholder informativo ──
+  const videoExists  = msg.video_local_exists === true;
+  const videoSection = videoExists
     ? `<video style="width:100%;max-width:200px;border-radius:12px;background:#000;display:block;margin:0 auto"
          src="/videos/${escHtml(msg.slug)}.mp4"
          controls muted preload="metadata"
          title="Prévia de scroll — ${escHtml(msg.nome_negocio)}"></video>`
-    : `<div class="video-placeholder" style="border-radius:8px;height:120px">🎬 <span>Vídeo gerado pelo Agente 4</span></div>`;
+    : `<div class="video-placeholder" style="border-radius:8px;height:120px">🎬 <span>Vídeo será gerado pelo Agente 4</span></div>`;
 
   return `<div class="card" id="card-${msg.id}">
     <div class="card-header">
