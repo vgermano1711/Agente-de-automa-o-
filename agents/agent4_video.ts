@@ -36,67 +36,74 @@ async function takeFullPageScreenshot(diag: Diagnostico): Promise<string | null>
   const tmpDir = path.join(process.cwd(), 'videos', 'tmp', diag.slug);
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-  // pathToFileURL gera URL correta em qualquer OS:
-  //   Windows: C:\Users\... → file:///C:/Users/...
-  //   Linux:   /home/...    → file:///home/...
   const fileUrl = pathToFileURL(pageFile).href;
   const outputPng = path.join(tmpDir, 'fullpage.png');
 
-  let browser;
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-web-security',
-        '--ignore-certificate-errors',
-        '--disable-features=IsolateOrigins,site-per-process',
-      ],
-    });
+  const MAX_ATTEMPTS = 2;
 
-    const page = await browser.newPage();
-    await page.setViewport({ width: VIEWPORT_W, height: VIEWPORT_H, deviceScaleFactor: SCALE });
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-web-security',
+          '--ignore-certificate-errors',
+          '--disable-features=IsolateOrigins,site-per-process',
+        ],
+      });
 
-    // Bloqueia Google Fonts: sem isso networkidle0 pode travar esperando CDN externa
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      const url = req.url();
-      if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
-        req.abort();
+      const page = await browser.newPage();
+      await page.setViewport({ width: VIEWPORT_W, height: VIEWPORT_H, deviceScaleFactor: SCALE });
+
+      // Bloqueia Google Fonts: sem isso networkidle0 pode travar esperando CDN externa
+      await page.setRequestInterception(true);
+      page.on('request', (req) => {
+        const url = req.url();
+        if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
+
+      await page.goto(fileUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+
+      // Deixa CSS e animações terminarem
+      await new Promise((r) => setTimeout(r, 2000));
+
+      // Injeta fontes web-safe como fallback (garante que o texto seja visível mesmo sem Google Fonts)
+      await page.addStyleTag({
+        content: `
+          @font-face { font-family: 'Playfair Display'; src: local('Georgia'); }
+          @font-face { font-family: 'Cormorant Garamond'; src: local('Georgia'); }
+          @font-face { font-family: 'Inter'; src: local('Arial'); }
+        `,
+      });
+
+      // Aguarda qualquer reflow depois do style inject
+      await new Promise((r) => setTimeout(r, 500));
+
+      // Screenshot full-page → imagem alta (tipicamente 780 × 5000-8000 px)
+      await page.screenshot({ path: outputPng, fullPage: true });
+
+      log.info(`    Screenshot: ${outputPng}`);
+      return outputPng;
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS) {
+        log.warn(`  Puppeteer tentativa ${attempt}/${MAX_ATTEMPTS} falhou para ${diag.nome}: ${(err as Error).message} — aguardando 3s`);
+        await new Promise((r) => setTimeout(r, 3000));
       } else {
-        req.continue();
+        log.error(`Puppeteer falhou para ${diag.nome} após ${MAX_ATTEMPTS} tentativas: ${(err as Error).message}`);
       }
-    });
-
-    await page.goto(fileUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-
-    // Deixa CSS e animações terminarem
-    await new Promise((r) => setTimeout(r, 2000));
-
-    // Injeta fontes web-safe como fallback (garante que o texto seja visível mesmo sem Google Fonts)
-    await page.addStyleTag({
-      content: `
-        @font-face { font-family: 'Playfair Display'; src: local('Georgia'); }
-        @font-face { font-family: 'Cormorant Garamond'; src: local('Georgia'); }
-        @font-face { font-family: 'Inter'; src: local('Arial'); }
-      `,
-    });
-
-    // Aguarda qualquer reflow depois do style inject
-    await new Promise((r) => setTimeout(r, 500));
-
-    // Screenshot full-page → imagem alta (tipicamente 780 × 5000-8000 px)
-    await page.screenshot({ path: outputPng, fullPage: true });
-
-    log.info(`    Screenshot: ${outputPng}`);
-    return outputPng;
-  } catch (err) {
-    log.error(`Puppeteer falhou para ${diag.nome}: ${(err as Error).message}`);
-    return null;
-  } finally {
-    if (browser) await browser.close();
+    } finally {
+      if (browser) await browser.close();
+    }
   }
+
+  return null;
 }
 
 function ffmpegAvailable(): boolean {
@@ -150,8 +157,7 @@ function createScrollVideo(diag: Diagnostico, screenshotPath: string): string | 
     `crop=${nativeW}:${nativeH}:0:'${scrollExpr}'`,
     // 3. Reduz para tamanho de exibição 390×844
     `scale=${VIEWPORT_W}:${VIEWPORT_H}`,
-    // 4. Fade in/out suave
-    `fade=t=in:st=0:d=0.8`,
+    // 4. Fade out suave no final
     `fade=t=out:st=${duration - 0.8}:d=0.8`,
   ].join(',');
 
@@ -212,6 +218,12 @@ export async function runAgent4(): Promise<void> {
     if (videoPath) {
       const sizeMb = (fs.statSync(videoPath).size / 1024 / 1024).toFixed(1);
       log.info(`  ✓ ${diag.nome} → ${videoPath} (${sizeMb} MB)`);
+      const tmpDir = path.join(process.cwd(), 'videos', 'tmp', diag.slug);
+      try {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } catch {
+        log.warn(`  Não foi possível apagar tmp: ${tmpDir}`);
+      }
     } else {
       log.warn(`  ⚠ Vídeo não gerado para ${diag.nome}`);
     }

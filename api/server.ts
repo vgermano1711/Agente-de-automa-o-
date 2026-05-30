@@ -143,35 +143,43 @@ app.get('/api/respostas', (_req, res) => {
   res.json(respostas.filter((r) => r.status === 'pendente_aprovacao'));
 });
 
+// Singleton SMTP — evita abrir nova conexão por envio
+let _emailTransporter: nodemailer.Transporter | null = null;
+function getEmailTransporter(): nodemailer.Transporter | null {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  if (!_emailTransporter) {
+    _emailTransporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+      pool: true,
+      maxConnections: 1,
+    });
+  }
+  return _emailTransporter;
+}
+
 async function sendEmail(msg: Mensagem): Promise<void> {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  const transporter = getEmailTransporter();
   const toEmail = process.env.LEAD_EMAIL_OVERRIDE || 'lead@example.com';
 
-  if (!gmailUser || !gmailPass) {
-    log.warn('Gmail não configurado — simulando envio');
+  if (!transporter) {
+    log.warn('Gmail não configurado — simulando envio de email');
     return;
   }
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: gmailUser, pass: gmailPass },
-  });
-
   const mailOptions: nodemailer.SendMailOptions = {
-    from: gmailUser,
+    from: process.env.GMAIL_USER,
     to: toEmail,
     subject: msg.assunto || `Proposta para ${msg.nome_negocio}`,
     text: msg.corpo,
   };
 
   if (msg.video_path && fs.existsSync(msg.video_path)) {
-    mailOptions.attachments = [
-      {
-        filename: `preview_${msg.slug}.mp4`,
-        path: msg.video_path,
-      },
-    ];
+    mailOptions.attachments = [{ filename: `preview_${msg.slug}.mp4`, path: msg.video_path }];
+  } else if (msg.video_path) {
+    log.warn(`Video não encontrado para anexo (${msg.slug}): ${msg.video_path} — enviando sem anexo`);
   }
 
   await transporter.sendMail(mailOptions);

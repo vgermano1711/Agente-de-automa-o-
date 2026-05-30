@@ -65,13 +65,17 @@ async function searchPlaces(
 
     const results = searchResp.data?.results || [];
 
-    for (const place of results.slice(0, 10)) {
-      if (prospectados.has(place.place_id)) continue;
-      if ((place.rating || 0) < 4.0) continue;
-      if ((place.user_ratings_total || 0) < 20) continue;
+    // Pré-filtra antes de buscar detalhes (evita requests desnecessários)
+    const candidates = (results as Record<string, unknown>[]).slice(0, 10).filter(
+      (place) =>
+        !prospectados.has(place.place_id as string) &&
+        ((place.rating as number) || 0) >= 4.0 &&
+        ((place.user_ratings_total as number) || 0) >= 20
+    );
 
-      let detalhes: Record<string, unknown> = {};
-      try {
+    // Busca detalhes + qualidade do site em paralelo para todos os candidatos
+    const settled = await Promise.allSettled(
+      candidates.map(async (place) => {
         const detailResp = await axios.get(`${PLACES_API}/details/json`, {
           params: {
             place_id: place.place_id,
@@ -80,46 +84,46 @@ async function searchPlaces(
             language: 'pt-BR',
           },
         });
-        detalhes = detailResp.data?.result || {};
-      } catch {
-        continue;
-      }
+        const detalhes: Record<string, unknown> = detailResp.data?.result || {};
+        const website = (detalhes.website as string) || null;
+        const siteStatus = await checkSiteQuality(website || '');
+        return { place, detalhes, website, siteStatus };
+      })
+    );
 
-      const website = (detalhes.website as string) || null;
-      const siteStatus = await checkSiteQuality(website || '');
+    for (const result of settled) {
+      if (result.status !== 'fulfilled') continue;
+      const { place, detalhes, website, siteStatus } = result.value;
       if (siteStatus === 'site_ok') continue;
 
       const scoreBase = Math.round(
-        ((place.rating - 4) / 1) * 40 +
-          (Math.min(place.user_ratings_total, 200) / 200) * 30 +
+        (((place.rating as number) - 4) / 1) * 40 +
+          (Math.min(place.user_ratings_total as number, 200) / 200) * 30 +
           (siteStatus === 'sem_site' ? 30 : 15)
       );
 
       const rawTelefone = (detalhes.formatted_phone_number as string) || '';
-      // Google Places retorna +55 11 9xxxx-xxxx (13 dígitos) — normaliza removendo DDI
       const rawDigits = rawTelefone.replace(/\D/g, '');
       const digitos = (rawDigits.length > 11 && rawDigits.startsWith('55'))
         ? rawDigits.slice(2)
         : rawDigits;
-      // Celular BR: 11 dígitos, 3ª posição (índice 2) = '9'
       const isCelular = digitos.length === 11 && digitos[2] === '9';
       if (!isCelular) {
-        log.info(`  Pulando ${detalhes.name as string} — número fixo (${rawTelefone})`);
+        log.info(`  Pulando ${(detalhes.name as string)} — número fixo (${rawTelefone})`);
         continue;
       }
-      const telefone = rawTelefone;
 
       const lead: Lead = {
         id: generateId(),
-        nome: detalhes.name as string || place.name,
-        endereco: detalhes.formatted_address as string || place.formatted_address,
-        telefone,
+        nome: (detalhes.name as string) || (place.name as string),
+        endereco: (detalhes.formatted_address as string) || (place.formatted_address as string),
+        telefone: rawTelefone,
         categoria: segmento,
         website,
         cidade,
-        avaliacao: place.rating,
-        total_avaliacoes: place.user_ratings_total,
-        google_place_id: place.place_id,
+        avaliacao: place.rating as number,
+        total_avaliacoes: place.user_ratings_total as number,
+        google_place_id: place.place_id as string,
         score_oportunidade: scoreBase,
         data_prospeccao: today(),
       };
