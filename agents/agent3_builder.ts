@@ -59,8 +59,11 @@ export async function runAgent3(): Promise<Diagnostico[]> {
     const pageDir = path.join(pagesDir, diag.slug);
     const pageFile = path.join(pageDir, 'index.html');
 
-    // Pula se já tem página E URL gerada
-    if (fs.existsSync(pageFile) && diag.landing_page_url) {
+    // Pula só se a página existe E já tem URL válida (não Netlify, não localhost)
+    const urlValida = diag.landing_page_url &&
+      !diag.landing_page_url.includes('netlify') &&
+      !diag.landing_page_url.startsWith('http://localhost');
+    if (fs.existsSync(pageFile) && urlValida) {
       log.info(`  ↷ ${diag.nome} — página já existe, pulando`);
       continue;
     }

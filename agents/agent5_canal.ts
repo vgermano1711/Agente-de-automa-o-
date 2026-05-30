@@ -173,7 +173,12 @@ export async function runAgent5(): Promise<Mensagem[]> {
 
   const msgFile = dataPath('mensagens_{data}.json');
   const existentes = readJson<Mensagem[]>(msgFile) || [];
-  const slugsComMensagem = new Set(existentes.map((m) => m.slug));
+  // Ignora mensagens com URLs antigas do Netlify para forçar regeneração
+  const slugsComMensagem = new Set(
+    existentes
+      .filter((m) => !m.landing_page_url?.includes('netlify'))
+      .map((m) => m.slug)
+  );
 
   const novos = diagnosticos.filter((d) => !slugsComMensagem.has(d.slug));
 
