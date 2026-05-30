@@ -38,3 +38,11 @@ try {
   console.error('Pipeline falhou:', err.message);
   process.exit(1);
 }
+
+// ── 3. Reparar URLs Netlify ───────────────────────────────────────────────────
+console.log('\n🔧 Verificando URLs Netlify...');
+try {
+  execSync('node repair-urls.js', { stdio: 'inherit', cwd: process.cwd() });
+} catch (err) {
+  console.error('repair-urls falhou (não crítico):', err.message);
+}
