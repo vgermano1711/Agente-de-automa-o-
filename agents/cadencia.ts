@@ -14,12 +14,45 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import nodemailer from 'nodemailer';
 import path from 'path';
 import fs from 'fs';
 import { CadenciaLead, FollowUpEntry, Diagnostico, Mensagem } from '../types';
 import { log } from '../utils/logger';
 import { readJson, writeJson, today } from '../utils/dataHelpers';
 import { sendWhatsApp } from '../utils/whatsapp';
+
+let _mailer: nodemailer.Transporter | null = null;
+function getMailer(): nodemailer.Transporter | null {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  if (!_mailer) {
+    _mailer = nodemailer.createTransport({ service: 'gmail', auth: { user, pass }, pool: true, maxConnections: 1 });
+  }
+  return _mailer;
+}
+
+async function sendFollowUpEmail(lead: CadenciaLead, corpo: string): Promise<boolean> {
+  const mailer = getMailer();
+  const owner = process.env.GMAIL_USER;
+  if (!mailer || !owner) {
+    log.warn(`  [cadência] Gmail não configurado — follow-up email para ${lead.nome_negocio} simulado`);
+    return true;
+  }
+  try {
+    await mailer.sendMail({
+      from: owner,
+      to: owner,
+      subject: `Follow-up: ${lead.nome_negocio}`,
+      text: corpo,
+    });
+    return true;
+  } catch (err) {
+    log.error(`  [cadência] Email falhou para ${lead.nome_negocio}: ${(err as Error).message}`);
+    return false;
+  }
+}
 
 const client = new Anthropic();
 const CADENCIA_FILE = path.join(process.cwd(), 'data', 'cadencia.json');
@@ -58,7 +91,7 @@ export function registrarNaCadencia(diag: Diagnostico, msg: Mensagem): void {
   const existe = cadencias.find(c => c.slug === diag.slug);
   if (existe) return;
 
-  const canalPrimario = diag.perfil_cadencia?.melhor_canal || diag.canal_recomendado === 'whatsapp' ? 'whatsapp' : 'email';
+  const canalPrimario = diag.perfil_cadencia?.melhor_canal || (diag.canal_recomendado === 'whatsapp' ? 'whatsapp' : 'email');
   const canalSecundario = canalPrimario === 'whatsapp' ? 'email' : 'whatsapp';
 
   const nova: CadenciaLead = {
@@ -179,10 +212,11 @@ export async function processarCadencias(): Promise<void> {
       } catch (err) {
         log.error(`  ✗ Erro WhatsApp ${lead.nome_negocio}: ${(err as Error).message}`);
       }
+    } else if (canal === 'email') {
+      enviado = await sendFollowUpEmail(lead, mensagem);
+      if (enviado) log.info(`  ✓ Email enviado para ${lead.nome_negocio}`);
     } else {
-      // Simula envio para canal não-WhatsApp (e-mail via Agent 7)
-      log.info(`  ↷ ${lead.nome_negocio} — canal ${canal} (delegado ao Agent 7)`);
-      enviado = true;
+      log.info(`  ↷ ${lead.nome_negocio} — canal ${canal} não suportado na cadência, pulando`);
     }
 
     if (!enviado) continue;
