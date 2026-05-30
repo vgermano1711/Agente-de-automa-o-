@@ -7,10 +7,20 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 import { Diagnostico } from '../types';
 import { log } from '../utils/logger';
 import { dataPath, readJson, writeJson } from '../utils/dataHelpers';
 import { generateContent, buildHTML } from '../regenerar-pages';
+
+async function verifySurgeDeployment(url: string): Promise<boolean> {
+  try {
+    const resp = await axios.get(url, { timeout: 10000 });
+    return resp.status >= 200 && resp.status < 400;
+  } catch {
+    return false;
+  }
+}
 
 async function generatePageHTML(diag: Diagnostico): Promise<string> {
   const content = await generateContent(diag);
@@ -77,7 +87,17 @@ export async function runAgent3(): Promise<Diagnostico[]> {
     diag.landing_page_path = pageFile;
 
     const deployedUrl = deployToSurge(diag.slug, pageDir);
-    diag.landing_page_url = deployedUrl || `http://localhost:3000/pages/${diag.slug}`;
+    if (deployedUrl) {
+      const acessivel = await verifySurgeDeployment(deployedUrl);
+      if (acessivel) {
+        diag.landing_page_url = deployedUrl;
+      } else {
+        log.warn(`  ⚠ ${diag.nome} — deploy OK mas site inacessível, usando localhost`);
+        diag.landing_page_url = `http://localhost:3000/pages/${diag.slug}`;
+      }
+    } else {
+      diag.landing_page_url = `http://localhost:3000/pages/${diag.slug}`;
+    }
 
     log.info(`  ✓ ${diag.nome} → ${diag.landing_page_url}`);
   }

@@ -5,6 +5,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import fs from 'fs';
 import path from 'path';
 import { Diagnostico, Mensagem } from '../types';
 import { log } from '../utils/logger';
@@ -123,7 +124,7 @@ ${canal === 'email' ? 'Retorne JSON: {"assunto": "...", "corpo": "..."}' : 'Reto
       assunto,
       corpo,
       landing_page_url: landingUrl,
-      video_path: require('fs').existsSync(videoPath) ? videoPath : null,
+      video_path: fs.existsSync(videoPath) ? videoPath : null,
       status: 'aguardando_revisao',
       data_criacao: new Date().toISOString(),
       slug: diag.slug,
@@ -136,7 +137,6 @@ ${canal === 'email' ? 'Retorne JSON: {"assunto": "...", "corpo": "..."}' : 'Reto
 
 function mockMessage(diag: Diagnostico, landingUrl: string, videoPath: string): Mensagem {
   const canal = diag.canal_recomendado;
-  const fs = require('fs');
 
   const corpos: Record<string, string> = {
     whatsapp: `Oi! Vi o ${diag.nome} no Google enquanto pesquisava negócios de ${diag.categoria} em ${diag.cidade}.\n\nFiquei impressionado com as avaliações — reputação assim é difícil de construir. Só que percebi que quem busca por vocês online acaba não te encontrando com facilidade.\n\nResolvi montar uma prévia de como ficaria a presença de vocês na internet:\n${landingUrl}\n\nO que você achou?`,

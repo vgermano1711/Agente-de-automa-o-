@@ -7,7 +7,7 @@
     "construtora",
     "corretor de imóveis"
   ],
-  "leads_por_dia": 5,
+  "leads_por_dia": 15,
   "horario_ciclo": "0 8 * * *",
   "intervalo_agent7_minutos": 5,
   "canal_padrao": "whatsapp",
