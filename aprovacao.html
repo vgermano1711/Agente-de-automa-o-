@@ -732,7 +732,6 @@ function renderCard(msg) {
         </div>
         <div class="lp-link-row">
           <a class="lp-open-btn" href="${localPath}" target="_blank" rel="noopener">🖥 Ver local ↗</a>
-          ${publicUrl ? `<a class="lp-open-btn" href="${escHtml(publicUrl)}" target="_blank" rel="noopener">🌐 Ver online ↗</a>` : ''}
         </div>
       </div>`;
   } else if (lpUrl && !lpExists) {
