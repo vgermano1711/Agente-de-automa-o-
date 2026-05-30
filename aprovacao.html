@@ -698,9 +698,16 @@ async function loadHistorico() {
 }
 
 function renderCard(msg) {
-  const score = msg.revisao_score || 75;
+  const score  = msg.revisao_score || 75;
   const lpUrl  = msg.landing_page_url;
   const cardId = msg.id;
+
+  // WhatsApp deep-link: dígitos limpos com DDI 55
+  const telDigits = (msg._telefone || '').replace(/\D/g, '');
+  const telWa     = telDigits ? (telDigits.startsWith('55') ? telDigits : '55' + telDigits) : '';
+  const waHref    = (msg.canal === 'whatsapp' && telWa)
+    ? 'https://wa.me/' + telWa + '?text=' + encodeURIComponent(msg.corpo)
+    : null;
 
   // ── LP Preview: phone mockup com iframe escalado 0.51× (390→200px) ──
   let lpSection;
@@ -777,6 +784,16 @@ function renderCard(msg) {
           <strong style="color:${scoreColor(score)}">${score}/100</strong>
         </div>
         ${msg.revisao_notas ? `<small style="color:var(--muted);font-size:.75rem">${escHtml(msg.revisao_notas)}</small>` : ''}
+        <div style="margin-top:14px;background:#0d1117;border-radius:8px;border-left:3px solid #25d366;padding:14px 14px 10px">
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📋 Mensagem para enviar ao cliente</div>
+          <div style="font-size:0.88rem;line-height:1.65;white-space:pre-wrap;color:var(--text);margin-bottom:12px">${escHtml(msg.corpo)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" style="background:#2a2d3e;color:var(--text);font-size:0.8rem;padding:6px 14px"
+              onclick="copiarMensagem('${msg.id}', this)">📋 Copiar mensagem</button>
+            ${waHref ? `<a href="${waHref}" target="_blank" rel="noopener"
+              class="btn" style="background:#25d366;color:#fff;font-size:0.8rem;padding:6px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:4px">📱 Abrir no WhatsApp</a>` : ''}
+          </div>
+        </div>
         ${msg.canal === 'whatsapp' ? `
         <div style="margin-top:12px;padding:10px 12px;background:#0d1117;border-radius:8px;border:1px solid var(--border)">
           <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:6px">📱 WhatsApp do destinatário</label>
@@ -795,6 +812,16 @@ function renderCard(msg) {
       <button class="btn btn-reject" onclick="rejeitar('${msg.id}')">❌ Rejeitar</button>
     </div>
   </div>`;
+}
+
+function copiarMensagem(id, btn) {
+  const msg = messages.find(m => m.id === id);
+  if (!msg) return;
+  navigator.clipboard.writeText(msg.corpo).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => toast('Não foi possível copiar', 'error'));
 }
 
 function toggleEdit(id) {
