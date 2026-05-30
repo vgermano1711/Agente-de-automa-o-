@@ -118,8 +118,10 @@ async function runDailyCycle(): Promise<void> {
     return;
   }
 
-  // Verificar retomada de crash
-  const ultimoAgente = state?.data === today ? state.ultimo_agente_concluido : 0;
+  // Crash recovery: só retoma se o pipeline anterior travou (em_execucao=true indica crash)
+  // Se completou normalmente (em_execucao=false), começa do zero
+  const crashedMidRun = state?.data === today && state?.em_execucao === true;
+  const ultimoAgente = crashedMidRun ? state!.ultimo_agente_concluido : 0;
   if (ultimoAgente > 0) {
     log.info(`♻️  Retomando do Agente ${ultimoAgente + 1} (crash recovery)`);
   }
@@ -223,9 +225,14 @@ cron.schedule('0 10 * * *', () => {
 });
 log.info('⏰ Cadência agendada: 10:00 todos os dias');
 
-// Inicialização principal — WhatsApp primeiro, depois cron
+// Inicialização principal
 (async () => {
-  await initWhatsApp();
+  // WhatsApp só é inicializado no modo servidor contínuo.
+  // Em --run-now o API server (npm run dev:api) já gerencia a sessão WhatsApp —
+  // inicializar aqui causaria conflito de sessão (.wwebjs_auth já em uso).
+  if (!process.argv.includes('--run-now')) {
+    await initWhatsApp();
+  }
 
   cron.schedule(cronSchedule, () => {
     runDailyCycle().catch((err) => {
@@ -239,7 +246,7 @@ log.info('⏰ Cadência agendada: 10:00 todos os dias');
       log.error(`Execução manual falhou: ${err.message}`);
       process.exit(1);
     });
+  } else {
+    log.info('🤖 Sales Bot iniciado e aguardando próximo ciclo agendado');
   }
-
-  log.info('🤖 Sales Bot iniciado e aguardando próximo ciclo agendado');
 })();

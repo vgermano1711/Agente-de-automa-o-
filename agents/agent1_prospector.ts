@@ -95,14 +95,19 @@ async function searchPlaces(
           (siteStatus === 'sem_site' ? 30 : 15)
       );
 
-      const telefone = (detalhes.formatted_phone_number as string) || '';
-      // Filtra fixos: celular BR tem 9 dígitos após DDD e começa com 9
-      const digitos = telefone.replace(/\D/g, '');
-      const isCelular = digitos.length >= 11 && digitos[2] === '9';
+      const rawTelefone = (detalhes.formatted_phone_number as string) || '';
+      // Google Places retorna +55 11 9xxxx-xxxx (13 dígitos) — normaliza removendo DDI
+      const rawDigits = rawTelefone.replace(/\D/g, '');
+      const digitos = (rawDigits.length > 11 && rawDigits.startsWith('55'))
+        ? rawDigits.slice(2)
+        : rawDigits;
+      // Celular BR: 11 dígitos, 3ª posição (índice 2) = '9'
+      const isCelular = digitos.length === 11 && digitos[2] === '9';
       if (!isCelular) {
-        log.info(`  Pulando ${detalhes.name as string} — número fixo (${telefone})`);
+        log.info(`  Pulando ${detalhes.name as string} — número fixo (${rawTelefone})`);
         continue;
       }
+      const telefone = rawTelefone;
 
       const lead: Lead = {
         id: generateId(),
