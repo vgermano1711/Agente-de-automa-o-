@@ -1,7 +1,8 @@
 /**
  * Agente 1 — Prospector
- * Varre cidades-alvo via Google Places API, filtra negócios sem site ou com site antigo,
- * deduplicados contra prospectados.json, e salva leads_{data}.json.
+ * Prospecta dois públicos distintos em paralelo:
+ *   - leads de SITE: negócios sem site ou com site antigo (WhatsApp)
+ *   - leads de AUTOMAÇÃO: negócios com site em setores de serviço intensivo (email/LinkedIn)
  */
 
 import axios from 'axios';
@@ -10,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { Lead } from '../types';
 import { log } from '../utils/logger';
-import { dataPath, readJson, writeJson, slugify, generateId, today } from '../utils/dataHelpers';
+import { dataPath, readJson, writeJson, generateId, today } from '../utils/dataHelpers';
 
 const PROSPECTADOS_FILE = path.join(process.cwd(), 'data', 'prospectados.json');
 const PLACES_API = 'https://maps.googleapis.com/maps/api/place';
@@ -50,22 +51,18 @@ async function searchPlaces(
   cidade: string,
   segmento: string,
   apiKey: string,
-  prospectados: Set<string>
+  prospectados: Set<string>,
+  tipoProduto: 'site' | 'automacao'
 ): Promise<Lead[]> {
   const leads: Lead[] = [];
 
   try {
     const searchResp = await axios.get(`${PLACES_API}/textsearch/json`, {
-      params: {
-        query: `${segmento} em ${cidade}`,
-        key: apiKey,
-        language: 'pt-BR',
-      },
+      params: { query: `${segmento} em ${cidade}`, key: apiKey, language: 'pt-BR' },
     });
 
     const results = searchResp.data?.results || [];
 
-    // Pré-filtra antes de buscar detalhes (evita requests desnecessários)
     const candidates = (results as Record<string, unknown>[]).slice(0, 10).filter(
       (place) =>
         !prospectados.has(place.place_id as string) &&
@@ -73,7 +70,6 @@ async function searchPlaces(
         ((place.user_ratings_total as number) || 0) >= 20
     );
 
-    // Busca detalhes + qualidade do site em paralelo para todos os candidatos
     const settled = await Promise.allSettled(
       candidates.map(async (place) => {
         const detailResp = await axios.get(`${PLACES_API}/details/json`, {
@@ -94,12 +90,18 @@ async function searchPlaces(
     for (const result of settled) {
       if (result.status !== 'fulfilled') continue;
       const { place, detalhes, website, siteStatus } = result.value;
-      if (siteStatus === 'site_ok') continue;
+
+      // Leads de SITE: sem site ou com site antigo
+      // Leads de AUTOMAÇÃO: já tem site (empresas mais estruturadas)
+      if (tipoProduto === 'site' && siteStatus === 'site_ok') continue;
+      if (tipoProduto === 'automacao' && siteStatus === 'sem_site') continue;
 
       const scoreBase = Math.round(
         (((place.rating as number) - 4) / 1) * 40 +
           (Math.min(place.user_ratings_total as number, 200) / 200) * 30 +
-          (siteStatus === 'sem_site' ? 30 : 15)
+          (tipoProduto === 'site'
+            ? siteStatus === 'sem_site' ? 30 : 15
+            : siteStatus === 'site_ok' ? 30 : 15)
       );
 
       const rawTelefone = (detalhes.formatted_phone_number as string) || '';
@@ -108,12 +110,14 @@ async function searchPlaces(
         ? rawDigits.slice(2)
         : rawDigits;
       const isCelular = digitos.length === 11 && digitos[2] === '9';
-      if (!isCelular) {
+
+      // Leads de site precisam de celular (WhatsApp); automação aceita fixo também (email/LinkedIn)
+      if (tipoProduto === 'site' && !isCelular) {
         log.info(`  Pulando ${(detalhes.name as string)} — número fixo (${rawTelefone})`);
         continue;
       }
 
-      const lead: Lead = {
+      leads.push({
         id: generateId(),
         nome: (detalhes.name as string) || (place.name as string),
         endereco: (detalhes.formatted_address as string) || (place.formatted_address as string),
@@ -126,9 +130,8 @@ async function searchPlaces(
         google_place_id: place.place_id as string,
         score_oportunidade: scoreBase,
         data_prospeccao: today(),
-      };
-
-      leads.push(lead);
+        tipo_produto: tipoProduto,
+      });
     }
   } catch (err) {
     log.error(`Places API falhou para ${segmento} em ${cidade}: ${(err as Error).message}`);
@@ -137,16 +140,24 @@ async function searchPlaces(
   return leads;
 }
 
-function mockLeads(config: { cidades_alvo: string[]; segmentos: string[] }): Lead[] {
-  const negociosMock = [
+function mockLeads(config: { cidades_alvo: string[] }): Lead[] {
+  const mockSite = [
     { nome: 'Salão da Dona Maria', cat: 'salão de beleza', cidade: config.cidades_alvo[0] },
     { nome: 'Barbearia do Zé', cat: 'barbearia', cidade: config.cidades_alvo[0] },
     { nome: 'Clínica Sorria Mais', cat: 'clínica odontológica', cidade: config.cidades_alvo[1] },
-    { nome: 'Construtora Horizonte', cat: 'construtora', cidade: config.cidades_alvo[1] },
-    { nome: 'Imóveis Silva & Filhos', cat: 'corretor de imóveis', cidade: config.cidades_alvo[2] },
+    { nome: 'Pet Shop Amigo Fiel', cat: 'pet shop', cidade: config.cidades_alvo[1] },
+    { nome: 'Academia Força Total', cat: 'academia de ginástica', cidade: config.cidades_alvo[2] },
   ];
 
-  return negociosMock.map((n, i) => ({
+  const mockAutomacao = [
+    { nome: 'Agência Impulso Digital', cat: 'agência de marketing', cidade: config.cidades_alvo[0] },
+    { nome: 'Imobiliária Lar Certo', cat: 'imobiliária', cidade: config.cidades_alvo[0] },
+    { nome: 'Advocacia & Silva', cat: 'escritório de advocacia', cidade: config.cidades_alvo[1] },
+    { nome: 'Contabilidade Precisa', cat: 'contabilidade', cidade: config.cidades_alvo[2] },
+    { nome: 'Escola Saber Mais', cat: 'escola particular', cidade: config.cidades_alvo[2] },
+  ];
+
+  const leadesSite: Lead[] = mockSite.map((n, i) => ({
     id: generateId(),
     nome: n.nome,
     endereco: `Rua das Flores, ${100 + i * 10} — ${n.cidade}`,
@@ -156,14 +167,33 @@ function mockLeads(config: { cidades_alvo: string[]; segmentos: string[] }): Lea
     cidade: n.cidade,
     avaliacao: 4.2 + i * 0.1,
     total_avaliacoes: 45 + i * 12,
-    google_place_id: `mock_place_${i}`,
+    google_place_id: `mock_site_${i}`,
     score_oportunidade: 75 + i * 4,
     data_prospeccao: today(),
+    tipo_produto: 'site',
   }));
+
+  const leadsAutomacao: Lead[] = mockAutomacao.map((n, i) => ({
+    id: generateId(),
+    nome: n.nome,
+    endereco: `Av. Paulista, ${200 + i * 10} — ${n.cidade}`,
+    telefone: `(11) 3${5000 + i}-${2000 + i * 111}`,
+    categoria: n.cat,
+    website: `https://www.${n.nome.toLowerCase().replace(/\s/g, '')}.com.br`,
+    cidade: n.cidade,
+    avaliacao: 4.3 + i * 0.1,
+    total_avaliacoes: 80 + i * 20,
+    google_place_id: `mock_auto_${i}`,
+    score_oportunidade: 70 + i * 5,
+    data_prospeccao: today(),
+    tipo_produto: 'automacao',
+  }));
+
+  return [...leadesSite, ...leadsAutomacao];
 }
 
 export async function runAgent1(): Promise<Lead[]> {
-  log.info('Agente 1 — Prospector iniciado');
+  log.info('Agente 1 — Prospector iniciado (site + automação)');
 
   const configRaw = fs.readFileSync(path.join(process.cwd(), 'config.json'), 'utf-8');
   const config = JSON.parse(configRaw);
@@ -177,16 +207,26 @@ export async function runAgent1(): Promise<Lead[]> {
     allLeads = mockLeads(config);
   } else {
     const tasks: Promise<Lead[]>[] = [];
+
+    // Prospecta leads de SITE
     for (const cidade of config.cidades_alvo) {
-      for (const segmento of config.segmentos) {
-        tasks.push(searchPlaces(cidade, segmento, apiKey, prospectados));
+      for (const segmento of (config.segmentos_site || [])) {
+        tasks.push(searchPlaces(cidade, segmento, apiKey, prospectados, 'site'));
       }
     }
+
+    // Prospecta leads de AUTOMAÇÃO
+    for (const cidade of config.cidades_alvo) {
+      for (const segmento of (config.segmentos_automacao || [])) {
+        tasks.push(searchPlaces(cidade, segmento, apiKey, prospectados, 'automacao'));
+      }
+    }
+
     const results = await Promise.all(tasks);
     allLeads = results.flat();
   }
 
-  // Deduplicar por place_id e filtrar já prospectados
+  // Deduplicar por place_id
   const vistos = new Set<string>();
   const leadsUnicos = allLeads.filter((l) => {
     if (prospectados.has(l.google_place_id) || vistos.has(l.google_place_id)) return false;
@@ -194,19 +234,25 @@ export async function runAgent1(): Promise<Lead[]> {
     return true;
   });
 
-  // Top N por score
-  const topLeads = leadsUnicos
+  // Top N por tipo, ordenados por score
+  const topSite = leadsUnicos
+    .filter((l) => l.tipo_produto === 'site')
     .sort((a, b) => b.score_oportunidade - a.score_oportunidade)
-    .slice(0, config.leads_por_dia);
+    .slice(0, config.leads_por_dia_site || 10);
 
-  // Salvar
+  const topAutomacao = leadsUnicos
+    .filter((l) => l.tipo_produto === 'automacao')
+    .sort((a, b) => b.score_oportunidade - a.score_oportunidade)
+    .slice(0, config.leads_por_dia_automacao || 5);
+
+  const topLeads = [...topSite, ...topAutomacao];
+
   const leadsFile = dataPath('leads_{data}.json');
   writeJson(leadsFile, topLeads);
 
-  // Atualizar prospectados
   topLeads.forEach((l) => prospectados.add(l.google_place_id));
   saveProspectados(prospectados);
 
-  log.success(`Agente 1 concluído: ${topLeads.length} leads encontrados → ${leadsFile}`);
+  log.success(`Agente 1 concluído: ${topSite.length} leads de site + ${topAutomacao.length} leads de automação → ${leadsFile}`);
   return topLeads;
 }

@@ -21,9 +21,16 @@ const BLOCKED_FILE = path.join(process.cwd(), 'data', 'leads_bloqueados.json');
 const CONFIDENCE_THRESHOLD = 85;
 
 function buildPrompt(lead: Lead): string {
+  const tipoProduto = lead.tipo_produto || 'site';
+  const contextoVenda = tipoProduto === 'automacao'
+    ? `PRODUTO A VENDER: Automação de processos — o Victor vai propor automatizar tarefas repetitivas deste negócio (prospecção, follow-up, atendimento, relatórios, agendamento, etc.). O negócio JÁ TEM site; o problema é ineficiência operacional.`
+    : `PRODUTO A VENDER: Landing page / site profissional — o Victor vai propor criar ou modernizar a presença digital deste negócio. O negócio NÃO TEM site ou tem um desatualizado.`;
+
   return `Você é um sistema de análise empresarial de alta precisão especializado em identificação de segmento, identidade visual e estratégia de abordagem comercial para pequenos e médios negócios brasileiros.
 
 Analise o negócio abaixo com profundidade e retorne um JSON com 5 componentes obrigatórios.
+
+${contextoVenda}
 
 NEGÓCIO ANALISADO:
 - Nome: ${lead.nome}
@@ -177,6 +184,7 @@ function buildDiagnostico(lead: Lead, result: DiagnosisResult): Diagnostico {
     landing_page_url: null,
     landing_page_path: null,
     data_diagnostico: today(),
+    tipo_produto: lead.tipo_produto || 'site',
     segmento: result.segmento,
     identidade_visual: result.identidade_visual,
     perfil_cadencia: result.perfil_cadencia,
@@ -184,6 +192,7 @@ function buildDiagnostico(lead: Lead, result: DiagnosisResult): Diagnostico {
 }
 
 function mockDiagnostico(lead: Lead): Diagnostico {
+  const isAutomacao = lead.tipo_produto === 'automacao';
   return {
     lead_id: lead.id,
     nome: lead.nome,
@@ -191,14 +200,21 @@ function mockDiagnostico(lead: Lead): Diagnostico {
     cidade: lead.cidade,
     telefone: lead.telefone,
     slug: slugify(lead.nome),
-    problema_principal: `${lead.nome} não tem presença digital adequada e perde clientes para concorrentes com site`,
-    angulo_de_venda: `Clientes em ${lead.cidade} buscam ${lead.categoria} no Google e não encontram ${lead.nome}`,
-    tom_da_abordagem: 'amigável e local',
-    canal_recomendado: 'whatsapp',
-    proposta_de_valor: `Automação de captação que atrai novos clientes sem esforço manual — 24h por dia`,
+    problema_principal: isAutomacao
+      ? `${lead.nome} realiza processos repetitivos manualmente e perde tempo e leads por falta de automação`
+      : `${lead.nome} não tem presença digital adequada e perde clientes para concorrentes com site`,
+    angulo_de_venda: isAutomacao
+      ? `Automatizar prospecção e follow-up em ${lead.categoria} pode triplicar conversões sem aumentar equipe`
+      : `Clientes em ${lead.cidade} buscam ${lead.categoria} no Google e não encontram ${lead.nome}`,
+    tom_da_abordagem: isAutomacao ? 'consultivo' : 'amigável e local',
+    canal_recomendado: isAutomacao ? 'email' : 'whatsapp',
+    proposta_de_valor: isAutomacao
+      ? `Automação que prospecta, qualifica e faz follow-up de leads 24h por dia — sem esforço manual`
+      : `Site profissional que aparece no Google e converte visitantes em clientes — 24h por dia`,
     landing_page_url: null,
     landing_page_path: null,
     data_diagnostico: today(),
+    tipo_produto: lead.tipo_produto || 'site',
     identidade_visual: fallbackIdentidade(lead),
     segmento: {
       macro: 'Serviços',
@@ -209,9 +225,9 @@ function mockDiagnostico(lead: Lead): Diagnostico {
       status: 'aprovado',
     },
     perfil_cadencia: {
-      melhor_canal: 'whatsapp',
-      melhor_horario: 'tarde',
-      tom_followup: 'amigável e direto, sem pressão',
+      melhor_canal: isAutomacao ? 'email' : 'whatsapp',
+      melhor_horario: isAutomacao ? 'manhã' : 'tarde',
+      tom_followup: isAutomacao ? 'consultivo e direto ao ROI' : 'amigável e direto, sem pressão',
     },
   };
 }

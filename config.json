@@ -1,13 +1,27 @@
 {
   "cidades_alvo": ["São Paulo, SP", "Campinas, SP", "Curitiba, PR"],
-  "segmentos": [
+  "segmentos_site": [
     "salão de beleza",
     "barbearia",
     "clínica odontológica",
     "construtora",
-    "corretor de imóveis"
+    "escola de idiomas",
+    "pet shop",
+    "academia de ginástica",
+    "restaurante"
   ],
-  "leads_por_dia": 15,
+  "segmentos_automacao": [
+    "agência de marketing",
+    "imobiliária",
+    "escritório de advocacia",
+    "clínica médica",
+    "escola particular",
+    "contabilidade",
+    "recursos humanos",
+    "e-commerce"
+  ],
+  "leads_por_dia_site": 10,
+  "leads_por_dia_automacao": 5,
   "horario_ciclo": "0 8 * * *",
   "intervalo_agent7_minutos": 5,
   "canal_padrao": "whatsapp",

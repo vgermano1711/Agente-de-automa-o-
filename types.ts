@@ -62,6 +62,7 @@ export interface Lead {
   google_place_id: string;
   score_oportunidade: number;
   data_prospeccao: string;
+  tipo_produto: 'site' | 'automacao';
 }
 
 export interface Diagnostico {
@@ -79,6 +80,7 @@ export interface Diagnostico {
   landing_page_url: string | null;
   landing_page_path: string | null;
   data_diagnostico: string;
+  tipo_produto: 'site' | 'automacao';
   segmento?: SegmentoClassificacao;
   identidade_visual?: IdentidadeVisual;
   perfil_cadencia?: PerfilCadencia;
@@ -104,6 +106,19 @@ export interface Mensagem {
   data_criacao: string;
   data_envio?: string;
   slug: string;
+  tipo_produto: 'site' | 'automacao';
+}
+
+export interface Config {
+  cidades_alvo: string[];
+  segmentos_site: string[];
+  segmentos_automacao: string[];
+  leads_por_dia_site: number;
+  leads_por_dia_automacao: number;
+  horario_ciclo: string;
+  intervalo_agent7_minutos: number;
+  surge_prefix: string;
+  notificacoes_ativas: boolean;
 }
 
 export interface PipelineState {

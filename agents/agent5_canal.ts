@@ -13,6 +13,40 @@ import { dataPath, readJson, writeJson, generateId, today } from '../utils/dataH
 
 const client = new Anthropic();
 
+// Prompts para leads de AUTOMAÇÃO (B2B, foco em ROI e eficiência)
+const AUTOMACAO_PROMPTS: Record<string, string> = {
+  email: `Você é o Victor, especialista em automação de processos para pequenos e médios negócios.
+
+Escreva um email frio curto e direto para o gestor deste negócio.
+
+ASSUNTO: Específico para o segmento. Ex: "prospecção automática para imobiliárias" ou "follow-up sem esforço — para clínicas"
+
+CORPO — 3 parágrafos curtos:
+1. Como você achou o negócio e o que observou (algo concreto: avaliações, porte, presença digital)
+2. Uma tarefa repetitiva óbvia que eles fazem manualmente + o que a automação entregaria (ex: "leads qualificados sem ligar para cada um", "follow-up automático que não deixa ninguém esfriar")
+3. Proposta direta: conversa de 20 minutos para mostrar como funcionaria na prática
+
+Tom: direto, sem enrolação, como email pessoal de quem pesquisou o negócio.
+Assina como "Victor" apenas.
+
+Retorne JSON: {"assunto": "...", "corpo": "..."}`,
+
+  linkedin: `Você é o Victor, especialista em automação de processos.
+
+Escreva uma mensagem LinkedIn de até 4 frases para o gestor deste negócio.
+Tom: profissional, direto, como quem realmente pesquisou o perfil.
+Mencione o segmento, identifique um processo repetitivo concreto e proponha uma call de 20 minutos.
+Nunca use linguagem genérica de vendedor.`,
+
+  whatsapp: `Você é o Victor, especialista em automação de processos.
+
+Escreva uma mensagem WhatsApp direta para o gestor deste negócio.
+Mencione algo específico observado, identifique um processo repetitivo e proponha automatizar.
+Máx 4 linhas, tom direto e confiante.
+Termine com uma pergunta que desperta curiosidade sobre o resultado.`,
+};
+
+// Prompts para leads de SITE (B2C local, foco em presença digital)
 const CHANNEL_PROMPTS: Record<string, string> = {
   whatsapp: `Você é o Victor, desenvolvedor web. Escreva uma mensagem WhatsApp que faça o dono do negócio parar tudo e ler duas vezes.
 
@@ -64,10 +98,13 @@ Mencione o negócio, a cidade, apresente o link da prévia e termine com uma per
 
 async function generateMessage(diag: Diagnostico): Promise<Mensagem> {
   const canal = diag.canal_recomendado;
+  const isAutomacao = diag.tipo_produto === 'automacao';
   const landingUrl = diag.landing_page_url || 'http://localhost:3000/pages/' + diag.slug;
   const videoPath = path.join(process.cwd(), 'videos', `${diag.slug}.mp4`);
 
-  const channelInstructions = CHANNEL_PROMPTS[canal];
+  const channelInstructions = isAutomacao
+    ? (AUTOMACAO_PROMPTS[canal] || AUTOMACAO_PROMPTS['email'])
+    : CHANNEL_PROMPTS[canal];
 
   const prompt = `${channelInstructions}
 
@@ -129,6 +166,7 @@ ${canal === 'email' ? 'Retorne JSON: {"assunto": "...", "corpo": "..."}' : 'Reto
       status: 'aguardando_revisao',
       data_criacao: new Date().toISOString(),
       slug: diag.slug,
+      tipo_produto: diag.tipo_produto || 'site',
     };
   } catch (err) {
     log.warn(`Mensagem mock para ${diag.nome}: ${(err as Error).message}`);
@@ -159,6 +197,7 @@ function mockMessage(diag: Diagnostico, landingUrl: string, videoPath: string): 
     status: 'aguardando_revisao',
     data_criacao: new Date().toISOString(),
     slug: diag.slug,
+    tipo_produto: diag.tipo_produto || 'site',
   };
 }
 
