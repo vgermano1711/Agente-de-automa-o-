@@ -32,6 +32,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Bypass automático do aviso de browser do ngrok e localtunnel
+// Permite acesso mobile direto sem interstitial de aviso
+app.use((_req, res, next) => {
+  res.setHeader('ngrok-skip-browser-warning', 'true');
+  res.setHeader('bypass-tunnel-reminder', 'true');
+  next();
+});
+
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Servir landing pages locais

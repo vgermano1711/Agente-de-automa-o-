@@ -77,6 +77,8 @@
     .canal-instagram { background: #9333ea; color: #fff; }
     .canal-linkedin { background: #0369a1; color: #fff; }
     .canal-sms { background: #047857; color: #fff; }
+    .tipo-site { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
+    .tipo-automacao { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b44; }
 
     .card-body { display: grid; grid-template-columns: 1fr 1fr; }
     @media (max-width: 900px) { .card-body { grid-template-columns: 1fr; } }
@@ -767,6 +769,7 @@ function renderCard(msg) {
         <small style="color:var(--muted)">${escHtml(msg.slug)}</small>
       </div>
       <span class="canal-badge canal-${msg.canal}">${msg.canal}</span>
+      <span class="canal-badge tipo-${msg.tipo_produto || 'site'}" style="margin-left:6px">${msg.tipo_produto === 'automacao' ? '⚙ Automação' : '🌐 Site'}</span>
     </div>
     <div class="card-body">
       <div class="card-preview">
