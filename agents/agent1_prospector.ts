@@ -11,6 +11,7 @@ import path from 'path';
 import { Lead } from '../types';
 import { log } from '../utils/logger';
 import { dataPath, readJson, writeJson, slugify, generateId, today } from '../utils/dataHelpers';
+import { buscaDeLeadsPausada } from '../utils/antiSpam';
 
 const PROSPECTADOS_FILE    = path.join(process.cwd(), 'data', 'prospectados.json');
 const HISTORICO_FILE       = path.join(process.cwd(), 'data', 'historico_acionados.json');
@@ -299,6 +300,11 @@ function mockLeads(config: { cidades_alvo: string[]; segmentos: string[] }): Lea
 
 export async function runAgent1(): Promise<Lead[]> {
   log.info('Agente 1 — Prospector iniciado');
+
+  if (buscaDeLeadsPausada()) {
+    log.warn('Agente 1 — busca de leads pausada manualmente (BUSCA_DE_LEADS_PAUSADA=true), encerrando sem prospectar');
+    return [];
+  }
 
   const configRaw = fs.readFileSync(path.join(process.cwd(), 'config.json'), 'utf-8');
   const config = JSON.parse(configRaw);

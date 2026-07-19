@@ -20,6 +20,11 @@ export function emailProspeccaoPausada(): boolean {
   return process.env.EMAIL_PROSPECCAO_PAUSADA === 'true';
 }
 
+/** Kill-switch manual pra busca de leads novos (Agente 1 — Google Maps). */
+export function buscaDeLeadsPausada(): boolean {
+  return process.env.BUSCA_DE_LEADS_PAUSADA === 'true';
+}
+
 export function isNaBlacklist(telefone: string): boolean {
   const bl = readJson<string[]>(BLACKLIST_FILE) || [];
   const norm = telefone.replace(/\D/g, '').replace(/^55/, '');
