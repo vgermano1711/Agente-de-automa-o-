@@ -102,6 +102,7 @@ async function drainQueue(): Promise<void> {
 export async function notifyOwner(message: string, title = 'Sales Bot'): Promise<void> {
   if (process.env.NOTIFICACOES_ATIVAS === 'false') return;
   log.info(`Notificação: ${title} — ${message}`);
+  // Pushover (push nativo no celular) + email como fallback
   _queue.push({ message, title, attempts: 0 });
   drainQueue().catch((e: Error) => log.error(`Fila de notificações: ${e.message}`));
 }

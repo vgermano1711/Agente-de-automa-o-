@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ativar assistente de WhatsApp</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh;
+      background: #111b21; font-family: 'Segoe UI', system-ui, sans-serif; color: #e9edef;
+      padding: 24px;
+    }
+    .card {
+      background: #202c33; border-radius: 20px; padding: 36px 40px;
+      display: flex; flex-direction: column; align-items: center; gap: 22px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      max-width: 440px; width: 100%;
+    }
+    h1 { font-size: 1.3rem; color: #00a884; text-align: center; }
+    .subtitle { font-size: 0.9rem; color: #8696a0; text-align: center; }
+
+    #panel-qr { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; }
+
+    .qr-wrap {
+      width: 260px; height: 260px; border-radius: 14px;
+      background: #fff; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    canvas { border-radius: 10px; }
+
+    .qr-status { font-size: 0.85rem; color: #8696a0; text-align: center; min-height: 20px; }
+    .qr-status.ok    { color: #00a884; }
+    .qr-status.error { color: #ef4444; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #2a3942; border-top-color: #00a884;
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .connected-icon { font-size: 4rem; }
+
+    ol.steps { list-style: none; display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 0 4px; }
+    ol.steps li { font-size: 0.88rem; color: #8696a0; display: flex; gap: 10px; align-items: flex-start; }
+    ol.steps li .num { color: #00a884; font-weight: 700; flex-shrink: 0; min-width: 18px; }
+    ol.steps li span { color: #e9edef; }
+
+    .banner {
+      width: 100%; padding: 14px 16px; border-radius: 10px;
+      font-size: 0.9rem; text-align: center;
+    }
+    .banner.info    { background: #1d2d35; border: 1px solid #3b4a54; color: #8696a0; }
+    .banner.success { background: #12352a; border: 1px solid #00a88444; color: #00a884; }
+    .banner.error   { background: #3b1212; border: 1px solid #ef444444; color: #ef4444; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1 id="titulo">📱 Ativar assistente de WhatsApp</h1>
+  <div class="subtitle" id="subtitle">Carregando…</div>
+
+  <div id="panel-qr">
+    <div class="qr-wrap" id="qr-wrap">
+      <div class="spinner" id="qr-spinner"></div>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+      <div id="qr-connected" style="display:none;flex-direction:column;align-items:center;gap:8px">
+        <div class="connected-icon">✅</div>
+        <span style="color:#00a884;font-weight:700">Conectado!</span>
+      </div>
+    </div>
+    <div class="qr-status" id="qr-status">Aguardando QR Code…</div>
+
+    <ol class="steps" id="qr-steps">
+      <li><span class="num">1.</span><span>Abra o <span>WhatsApp</span> no celular do negócio</span></li>
+      <li><span class="num">2.</span><span>Toque em <span>Menu ⋮</span> (Android) ou <span>Configurações</span> (iPhone)</span></li>
+      <li><span class="num">3.</span><span>Toque em <span>Aparelhos conectados</span></span></li>
+      <li><span class="num">4.</span><span>Toque em <span>Conectar um aparelho</span></span></li>
+      <li><span class="num">5.</span><span>Aponte a câmera para o QR Code acima</span></li>
+    </ol>
+  </div>
+
+  <div id="banner-area"></div>
+</div>
+
+<script>
+const slug = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop());
+const token = new URLSearchParams(location.search).get('t') || '';
+const qs = token ? '?t=' + encodeURIComponent(token) : '';
+let pollTimer = null;
+let lastQrStr = null;
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('qr-status');
+  el.textContent = msg;
+  el.className = 'qr-status ' + type;
+}
+
+function showBanner(msg, type) {
+  document.getElementById('panel-qr').style.display = 'none';
+  document.getElementById('banner-area').innerHTML =
+    '<div class="banner ' + type + '">' + msg + '</div>';
+}
+
+async function carregarStatus() {
+  try {
+    const r = await fetch('/api/ativacao/' + encodeURIComponent(slug) + '/status' + qs);
+    const data = await r.json();
+    if (data.status === 'not_found' || data.status === 'forbidden') {
+      document.getElementById('subtitle').textContent = '';
+      showBanner('Link inválido ou projeto não encontrado. Entre em contato com quem te enviou este link.', 'error');
+      return;
+    }
+    document.getElementById('titulo').textContent = '📱 ' + data.nome_negocio;
+    document.getElementById('subtitle').textContent = 'Conecte o WhatsApp do seu negócio para ativar o assistente automático';
+  } catch {
+    document.getElementById('subtitle').textContent = '';
+    showBanner('Não foi possível carregar os dados do projeto. Tente recarregar a página.', 'error');
+  }
+}
+
+async function pollQr() {
+  try {
+    const r = await fetch('/api/ativacao/' + encodeURIComponent(slug) + '/qr' + qs);
+    const data = await r.json();
+
+    if (data.status === 'connected') { showConnected(); return; }
+    if (data.status === 'not_found' || data.status === 'forbidden') {
+      showBanner('Link inválido ou projeto não encontrado.', 'error');
+      return;
+    }
+    if (data.status === 'wrong_stage') {
+      showBanner(data.message || 'Este projeto ainda não está pronto para ativação.', 'info');
+      return;
+    }
+    if (data.status === 'capacity_full') {
+      showBanner(data.message || 'Limite de bots simultâneos atingido — fale com o suporte.', 'error');
+      return;
+    }
+    if (data.status === 'failed') {
+      showBanner('Erro ao iniciar a conexão: ' + (data.message || '') + '. Tente recarregar a página.', 'error');
+      return;
+    }
+
+    if (data.status === 'qr_ready' && data.qr_string) {
+      if (data.qr_string !== lastQrStr) {
+        lastQrStr = data.qr_string;
+        await renderQr(data.qr_string);
+      }
+      setStatus('Escaneie com o WhatsApp do celular do negócio', 'ok');
+    } else {
+      setStatus('Preparando conexão…');
+      showSpinner();
+    }
+  } catch {
+    setStatus('Não foi possível conectar ao servidor. Tentando novamente…', 'error');
+  }
+
+  pollTimer = setTimeout(pollQr, 5000);
+}
+
+async function renderQr(qrStr) {
+  const canvas = document.getElementById('qr-canvas');
+  const spinner = document.getElementById('qr-spinner');
+  const connected = document.getElementById('qr-connected');
+  try {
+    await QRCode.toCanvas(canvas, qrStr, {
+      width: 240,
+      margin: 2,
+      color: { dark: '#111b21', light: '#ffffff' },
+    });
+    spinner.style.display = 'none';
+    connected.style.display = 'none';
+    canvas.style.display = 'block';
+  } catch (e) {
+    setStatus('Erro ao renderizar QR: ' + e.message, 'error');
+  }
+}
+
+function showSpinner() {
+  document.getElementById('qr-spinner').style.display = 'block';
+  document.getElementById('qr-canvas').style.display = 'none';
+  document.getElementById('qr-connected').style.display = 'none';
+}
+
+function showConnected() {
+  clearTimeout(pollTimer);
+  document.getElementById('qr-spinner').style.display = 'none';
+  document.getElementById('qr-canvas').style.display = 'none';
+  document.getElementById('qr-connected').style.display = 'flex';
+  setStatus('Conectado! Seu assistente automático já está funcionando ✅', 'ok');
+  document.getElementById('qr-steps').style.display = 'none';
+  document.getElementById('subtitle').textContent = 'Tudo pronto — pode fechar esta janela';
+}
+
+carregarStatus();
+pollQr();
+</script>
+</body>
+</html>

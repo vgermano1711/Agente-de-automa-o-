@@ -11,4 +11,6 @@ logs/
 pages/
 .wwebjs_auth/
 .wwebjs_cache/
+.wwebjs_qr.json
+tunnel_url.txt
 run_log*.txt

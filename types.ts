@@ -41,12 +41,14 @@ export interface CadenciaLead {
   canal_primario: 'whatsapp' | 'email' | 'instagram';
   canal_secundario: 'whatsapp' | 'email' | 'instagram';
   etapa_atual: 0 | 1 | 3 | 7 | 14 | 21;
-  status: 'ativo' | 'respondeu' | 'recusou' | 'inativo' | 'reativacao';
+  status: 'ativo' | 'respondeu' | 'recusou' | 'inativo' | 'reativacao' | 'arquivado';
   data_primeiro_contato: string;
   data_proximo_contato: string | null;
   historico: FollowUpEntry[];
   segmento_micro: string;
   cidade: string;
+  mensagem_proposta?: string;  // Proposta com link, enviada no dia seguinte à apresentação
+  tipo_automacao?: string | null;
 }
 
 export interface Lead {
@@ -82,6 +84,9 @@ export interface Diagnostico {
   segmento?: SegmentoClassificacao;
   identidade_visual?: IdentidadeVisual;
   perfil_cadencia?: PerfilCadencia;
+  pitch_principal?: 'site' | 'automacao';
+  tipo_automacao?: 'agendamento' | 'reativacao' | 'cardapio' | 'atendimento' | 'review' | null;
+  sinal_automacao?: string | null;
 }
 
 export interface Mensagem {
@@ -98,7 +103,11 @@ export interface Mensagem {
     | 'aprovacao_pendente'
     | 'aprovado'
     | 'rejeitado'
-    | 'enviado';
+    | 'enviado'
+    | 'probe_enviado'
+    | 'bot_descartado'
+    | 'numero_invalido'
+    | 'falha_envio';
   revisao_score?: number;
   revisao_notas?: string;
   data_criacao: string;
@@ -132,6 +141,61 @@ export interface ReportError {
   timestamp: string;
 }
 
+export interface OnboardingInfo {
+  passo: number;          // 1-5 = pergunta atual; 6 = completo
+  // Site
+  instagram?: string;
+  logo?: string;          // 'recebida' | 'não tem' | texto livre
+  site_ref?: string;
+  descricao?: string;
+  servicos?: string;
+  // Automação
+  whatsapp_bot?: string;
+  duvidas_frequentes?: string;
+  horario_funcionamento?: string;
+  catalogo?: string;
+  msg_boas_vindas?: string;
+}
+
+export interface Projeto {
+  id: string;
+  slug: string;
+  nome_negocio: string;
+  phone: string;
+  opcao?: 0 | 1 | 2 | 3;
+  tipo_produto?: 'site' | 'automacao';
+  mensalidade?: number;                        // automação: valor mensal (297/497/697)
+  status: 'aguardando_confirmacao' | 'onboarding' | 'em_producao' | 'entregue' | 'ativo';
+  comprovante_em: string;
+  onboarding_completo_em?: string;
+  entregue_em?: string;
+  ativo_desde?: string;                        // automação: data em que o bot foi ativado
+  entrega_url?: string;
+  onboarding_info?: Omit<OnboardingInfo, 'passo'>;
+  // Site
+  segunda_parcela_paga?: boolean;
+  segunda_parcela_paga_em?: string;
+  segunda_parcela_lembrete_enviado_em?: string;
+  satisfacao_followup_enviado_em?: string;
+  upsell_enviado_em?: string;
+  // Automação
+  ultimo_cobranca_mensal?: string;
+  // Upsell pós-entrega
+  upsell_automacao_enviado_em?: string;
+  // Painel de ativação — token opaco pra evitar que o slug (previsível) sozinho dê acesso ao QR do cliente
+  ativacao_token?: string;
+}
+
+export interface Indicacao {
+  id: string;
+  de_phone: string;
+  de_nome_negocio: string;
+  mensagem_original: string;
+  data_detectada: string;
+  followup_enviado_em?: string;
+  status: 'detectada' | 'followup_enviado' | 'convertida';
+}
+
 export interface Config {
   cidades_alvo: string[];
   segmentos: string[];
@@ -146,6 +210,17 @@ export interface CalendarSlot {
   inicio: string;
   fim: string;
   link_calendly?: string;
+}
+
+export interface RascunhoWhatsApp {
+  id: string;
+  lead_phone: string;
+  nome_negocio: string;
+  slug: string;
+  mensagem_recebida: string;
+  rascunho_resposta: string;
+  data_recebimento: string;
+  status: 'pendente' | 'enviado' | 'ignorado';
 }
 
 export interface RespostaLead {

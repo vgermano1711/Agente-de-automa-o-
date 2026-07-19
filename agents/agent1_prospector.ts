@@ -12,8 +12,64 @@ import { Lead } from '../types';
 import { log } from '../utils/logger';
 import { dataPath, readJson, writeJson, slugify, generateId, today } from '../utils/dataHelpers';
 
-const PROSPECTADOS_FILE = path.join(process.cwd(), 'data', 'prospectados.json');
-const PLACES_API = 'https://maps.googleapis.com/maps/api/place';
+const PROSPECTADOS_FILE    = path.join(process.cwd(), 'data', 'prospectados.json');
+const HISTORICO_FILE       = path.join(process.cwd(), 'data', 'historico_acionados.json');
+const ROTATION_FILE        = path.join(process.cwd(), 'data', 'rotation_state.json');
+const PLACES_API           = 'https://maps.googleapis.com/maps/api/place';
+const COMBINACOES_POR_DIA  = 50; // ~$5/dia, dentro do crédito gratuito de $200/mês
+
+interface HistoricoEntry {
+  place_id: string;
+  slug: string;
+  nome: string;
+  telefone: string;
+  cidade: string;
+  segmento: string;
+  avaliacao: number | null;
+  data_acionamento: string;
+  status_cadencia: string;
+  etapa_cadencia: number | null;
+  respondeu: boolean;
+  estagio_conversa: string | null;
+}
+
+interface RotationState {
+  ordem: string[];   // combinações embaralhadas "cidade||segmento"
+  indice: number;    // próxima combinação a processar
+}
+
+function loadRotation(cidades: string[], segmentos: string[]): RotationState {
+  const existing = readJson<RotationState>(ROTATION_FILE);
+  const totalEsperado = cidades.length * segmentos.length;
+
+  // Recria se não existe, incompleto ou lista de cidades/segmentos mudou
+  if (!existing || existing.ordem.length !== totalEsperado) {
+    const todas: string[] = [];
+    for (const c of cidades) for (const s of segmentos) todas.push(`${c}||${s}`);
+    // Fisher-Yates shuffle
+    for (let i = todas.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [todas[i], todas[j]] = [todas[j], todas[i]];
+    }
+    const state: RotationState = { ordem: todas, indice: 0 };
+    writeJson(ROTATION_FILE, state);
+    return state;
+  }
+  return existing;
+}
+
+function nextCombinations(state: RotationState, n: number): Array<{ cidade: string; segmento: string }> {
+  const result: Array<{ cidade: string; segmento: string }> = [];
+  const total = state.ordem.length;
+  for (let i = 0; i < n; i++) {
+    const idx = (state.indice + i) % total;
+    const [cidade, segmento] = state.ordem[idx].split('||');
+    result.push({ cidade, segmento });
+  }
+  state.indice = (state.indice + n) % total;
+  writeJson(ROTATION_FILE, state);
+  return result;
+}
 
 function loadProspectados(): Set<string> {
   const data = readJson<string[]>(PROSPECTADOS_FILE);
@@ -22,6 +78,73 @@ function loadProspectados(): Set<string> {
 
 function saveProspectados(ids: Set<string>): void {
   writeJson(PROSPECTADOS_FILE, Array.from(ids));
+}
+
+/** Normaliza telefone para apenas dígitos (sem DDI 55) para comparação. */
+function normalizePhone(tel: string): string {
+  const digits = tel.replace(/\D/g, '');
+  return digits.startsWith('55') ? digits.slice(2) : digits;
+}
+
+/**
+ * Fonte única de verdade: carrega todos os telefones já acionados desde o início.
+ * Lê historico_acionados.json (arquivo consolidado) + cadência para garantir cobertura total.
+ */
+function loadPhonesJaContatados(): Set<string> {
+  const phones = new Set<string>();
+
+  // 1. Histórico consolidado — todos os leads de toda a vida do sistema
+  const historico = readJson<HistoricoEntry[]>(HISTORICO_FILE) || [];
+  for (const h of historico) {
+    if (h.telefone) phones.add(normalizePhone(h.telefone));
+  }
+
+  // 2. Cadência — garante cobertura de leads novos ainda não no histórico
+  const cadencia = readJson<Array<{ telefone?: string }>>(
+    path.join(process.cwd(), 'data', 'cadencia.json')
+  ) || [];
+  for (const c of cadencia) {
+    if (c.telefone) phones.add(normalizePhone(c.telefone));
+  }
+
+  return phones;
+}
+
+/** Registra novos leads no historico_acionados.json para deduplicação futura. */
+function registrarNoHistorico(leads: Lead[]): void {
+  const historico = readJson<HistoricoEntry[]>(HISTORICO_FILE) || [];
+  const existentes = new Set(historico.map((h) => h.place_id).filter(Boolean));
+  const existentesPhone = new Set(historico.map((h) => normalizePhone(h.telefone)).filter(Boolean));
+
+  let adicionados = 0;
+  for (const l of leads) {
+    if (l.google_place_id && existentes.has(l.google_place_id)) continue;
+    const ph = normalizePhone(l.telefone || '');
+    if (ph && existentesPhone.has(ph)) continue;
+
+    historico.push({
+      place_id:        l.google_place_id || '',
+      slug:            '',
+      nome:            l.nome,
+      telefone:        l.telefone || '',
+      cidade:          l.cidade,
+      segmento:        l.categoria,
+      avaliacao:       l.avaliacao ?? null,
+      data_acionamento: today(),
+      status_cadencia:  'novo',
+      etapa_cadencia:   null,
+      respondeu:        false,
+      estagio_conversa: null,
+    });
+    if (l.google_place_id) existentes.add(l.google_place_id);
+    if (ph) existentesPhone.add(ph);
+    adicionados++;
+  }
+
+  if (adicionados > 0) {
+    writeJson(HISTORICO_FILE, historico);
+    log.info(`  Histórico atualizado: +${adicionados} lead(s) registrado(s) (total: ${historico.length})`);
+  }
 }
 
 async function checkSiteQuality(url: string): Promise<'sem_site' | 'site_antigo' | 'site_ok'> {
@@ -65,12 +188,17 @@ async function searchPlaces(
 
     const results = searchResp.data?.results || [];
 
+    // Padrões de nomes que indicam rede/franquia/hospital — alto risco de chatbot
+    const CHAIN_PATTERNS = /\b(rede|grupo\s+\w|franquia|filial|matriz|unidade\s+\d|hospital|upa|pronto.socorro|sistema|corporativo|associa[çc][aã]o\s+(dos|de\s+(m[eé]dicos|dentistas)))\b/i;
+
     // Pré-filtra antes de buscar detalhes (evita requests desnecessários)
     const candidates = (results as Record<string, unknown>[]).slice(0, 10).filter(
       (place) =>
         !prospectados.has(place.place_id as string) &&
         ((place.rating as number) || 0) >= 4.0 &&
-        ((place.user_ratings_total as number) || 0) >= 20
+        ((place.user_ratings_total as number) || 0) >= 20 &&
+        ((place.user_ratings_total as number) || 0) <= 500 &&  // >500 = rede/franquia → bot
+        !CHAIN_PATTERNS.test((place.name as string) || '')
     );
 
     // Busca detalhes + qualidade do site em paralelo para todos os candidatos
@@ -94,12 +222,12 @@ async function searchPlaces(
     for (const result of settled) {
       if (result.status !== 'fulfilled') continue;
       const { place, detalhes, website, siteStatus } = result.value;
-      if (siteStatus === 'site_ok') continue;
+      if (siteStatus === 'sem_site') continue; // pivô: prospectar negócios COM site para pitch de automação
 
       const scoreBase = Math.round(
         (((place.rating as number) - 4) / 1) * 40 +
           (Math.min(place.user_ratings_total as number, 200) / 200) * 30 +
-          (siteStatus === 'sem_site' ? 30 : 15)
+          (siteStatus === 'site_ok' ? 30 : 15)
       );
 
       const rawTelefone = (detalhes.formatted_phone_number as string) || '';
@@ -110,6 +238,13 @@ async function searchPlaces(
       const isCelular = digitos.length === 11 && digitos[2] === '9';
       if (!isCelular) {
         log.info(`  Pulando ${(detalhes.name as string)} — número fixo (${rawTelefone})`);
+        continue;
+      }
+
+      // Descarta números com auto-resposta de bot já detectada
+      const botData = readJson<Record<string, string>>(path.join(process.cwd(), 'data', 'bot_responses.json')) || {};
+      if (botData[digitos]) {
+        log.info(`  Pulando ${(detalhes.name as string)} — número com bot registrado`);
         continue;
       }
 
@@ -169,6 +304,7 @@ export async function runAgent1(): Promise<Lead[]> {
   const config = JSON.parse(configRaw);
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   const prospectados = loadProspectados();
+  const phonesJaContatados = loadPhonesJaContatados();
 
   let allLeads: Lead[] = [];
 
@@ -176,21 +312,44 @@ export async function runAgent1(): Promise<Lead[]> {
     log.warn('GOOGLE_PLACES_API_KEY não configurada — usando dados mock para desenvolvimento');
     allLeads = mockLeads(config);
   } else {
-    const tasks: Promise<Lead[]>[] = [];
-    for (const cidade of config.cidades_alvo) {
-      for (const segmento of config.segmentos) {
-        tasks.push(searchPlaces(cidade, segmento, apiKey, prospectados));
+    // Agenda semanal: usa segmentos e horário do dia da semana se configurado
+    let segmentosHoje: string[] = config.segmentos;
+    type AgendaDia = { segmentos: string[]; horario: string } | string[];
+    const agendaSemanal: Record<string, AgendaDia> | undefined = config.agenda_semanal;
+    if (agendaSemanal) {
+      const diaSemana = new Date().getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex
+      const entrada = agendaSemanal[String(diaSemana)];
+      if (entrada) {
+        const segs = Array.isArray(entrada) ? entrada : entrada.segmentos;
+        if (segs && segs.length > 0) {
+          segmentosHoje = segs;
+          const nomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+          log.info(`  Agenda semanal (${nomes[diaSemana]}): ${segs.join(', ')}`);
+        }
       }
     }
+
+    const combinacoesPorDia = Math.min(COMBINACOES_POR_DIA, config.cidades_alvo.length * segmentosHoje.length);
+    const rotation = loadRotation(config.cidades_alvo, segmentosHoje);
+    const combinacoes = nextCombinations(rotation, combinacoesPorDia);
+    log.info(`  Rotação: ${combinacoes.length} combinações hoje (índice ${rotation.indice}/${rotation.ordem.length})`);
+
+    const tasks = combinacoes.map(({ cidade, segmento }) =>
+      searchPlaces(cidade, segmento, apiKey, prospectados)
+    );
     const results = await Promise.all(tasks);
     allLeads = results.flat();
   }
 
   // Deduplicar por place_id e filtrar já prospectados
-  const vistos = new Set<string>();
+  const vistosId = new Set<string>();
+  const vistosPhone = new Set<string>();
   const leadsUnicos = allLeads.filter((l) => {
-    if (prospectados.has(l.google_place_id) || vistos.has(l.google_place_id)) return false;
-    vistos.add(l.google_place_id);
+    if (prospectados.has(l.google_place_id) || vistosId.has(l.google_place_id)) return false;
+    const phone = l.telefone ? normalizePhone(l.telefone) : '';
+    if (phone && (phonesJaContatados.has(phone) || vistosPhone.has(phone))) return false;
+    vistosId.add(l.google_place_id);
+    if (phone) vistosPhone.add(phone);
     return true;
   });
 
@@ -203,9 +362,12 @@ export async function runAgent1(): Promise<Lead[]> {
   const leadsFile = dataPath('leads_{data}.json');
   writeJson(leadsFile, topLeads);
 
-  // Atualizar prospectados
-  topLeads.forEach((l) => prospectados.add(l.google_place_id));
+  // Registra TODOS os candidatos encontrados (não só top N) para evitar reprocessamento futuro
+  leadsUnicos.forEach((l) => prospectados.add(l.google_place_id));
   saveProspectados(prospectados);
+
+  // Atualiza historico_acionados.json com os leads selecionados hoje
+  registrarNoHistorico(topLeads);
 
   log.success(`Agente 1 concluído: ${topLeads.length} leads encontrados → ${leadsFile}`);
   return topLeads;

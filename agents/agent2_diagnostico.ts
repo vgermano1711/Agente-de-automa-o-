@@ -79,8 +79,23 @@ Retorne APENAS JSON válido, sem markdown, sem explicações externas:
     "melhor_horario": "manhã | tarde | noite",
     "tom_followup": "1 frase sobre o tom ideal para follow-up neste segmento"
   },
-  "canal_recomendado": "whatsapp | email | instagram | linkedin"
-}`;
+  "canal_recomendado": "whatsapp | email | instagram | linkedin",
+  "automacao": {
+    "tem_oportunidade": true,
+    "tipo": "agendamento | reativacao | cardapio | atendimento | review | null",
+    "sinal": "1 frase específica descrevendo o sinal detectado para ESTE negócio (ex: 'barbearia com atendimento presencial sem agendamento online')",
+    "pitch_principal": "site | automacao"
+  }
+}
+
+REGRAS PARA O BLOCO AUTOMACAO:
+- "agendamento": barbearia, salão de beleza, clínica, dentista, estúdio, fisioterapia, manicure — qualquer serviço baseado em horário marcado
+- "reativacao": academia, nutricionista, pet shop, lavanderia — serviços com frequência recorrente onde cliente some
+- "cardapio": restaurante, pizzaria, lanchonete, cafeteria, hamburgueria — qualquer food service
+- "atendimento": qualquer negócio com alto volume de perguntas repetitivas no WhatsApp
+- "review": qualquer negócio com menos de 100 avaliações no Google Maps
+- "pitch_principal: automacao" quando a automação é a dor mais óbvia (ex: barbearia sem agendamento digital, restaurante sem cardápio digital)
+- "pitch_principal: site" quando ausência/precariedade do site é a dor principal`;
 }
 
 interface DiagnosisResult {
@@ -95,6 +110,12 @@ interface DiagnosisResult {
   identidade_visual: IdentidadeVisual;
   perfil_cadencia: PerfilCadencia;
   canal_recomendado: string;
+  automacao?: {
+    tem_oportunidade: boolean;
+    tipo: string | null;
+    sinal: string | null;
+    pitch_principal: 'site' | 'automacao';
+  };
 }
 
 async function analyzeLead(lead: Lead): Promise<DiagnosisResult | null> {
@@ -162,6 +183,8 @@ function fallbackIdentidade(lead: Lead): IdentidadeVisual {
 }
 
 function buildDiagnostico(lead: Lead, result: DiagnosisResult): Diagnostico {
+  const auto = result.automacao;
+  const tiposValidos = ['agendamento', 'reativacao', 'cardapio', 'atendimento', 'review'];
   return {
     lead_id: lead.id,
     nome: lead.nome,
@@ -180,10 +203,33 @@ function buildDiagnostico(lead: Lead, result: DiagnosisResult): Diagnostico {
     segmento: result.segmento,
     identidade_visual: result.identidade_visual,
     perfil_cadencia: result.perfil_cadencia,
+    pitch_principal: auto?.pitch_principal || 'site',
+    tipo_automacao: (auto?.tipo && tiposValidos.includes(auto.tipo)
+      ? auto.tipo as Diagnostico['tipo_automacao']
+      : null),
+    sinal_automacao: auto?.sinal || null,
   };
 }
 
+function detectAutoMock(lead: Lead): Pick<Diagnostico, 'pitch_principal' | 'tipo_automacao' | 'sinal_automacao'> {
+  const cat = (lead.categoria || '').toLowerCase();
+  if (/barbearia|barber|salão|salon|clínica|clinica|dentist|estúdio|fisio|manicure/.test(cat)) {
+    return { pitch_principal: 'automacao', tipo_automacao: 'agendamento', sinal_automacao: `${lead.categoria} sem agendamento digital pelo WhatsApp` };
+  }
+  if (/restaurante|pizzaria|lanchonete|cafeteria|hamburguer|comida/.test(cat)) {
+    return { pitch_principal: 'automacao', tipo_automacao: 'cardapio', sinal_automacao: `${lead.categoria} sem cardápio digital online` };
+  }
+  if (/academia|gym|fitness|nutricion|pet/.test(cat)) {
+    return { pitch_principal: 'automacao', tipo_automacao: 'reativacao', sinal_automacao: `${lead.categoria} com base de clientes recorrentes sem reativação automática` };
+  }
+  if (lead.total_avaliacoes < 100) {
+    return { pitch_principal: 'site', tipo_automacao: 'review', sinal_automacao: `apenas ${lead.total_avaliacoes} avaliações no Google` };
+  }
+  return { pitch_principal: 'site', tipo_automacao: null, sinal_automacao: null };
+}
+
 function mockDiagnostico(lead: Lead): Diagnostico {
+  const auto = detectAutoMock(lead);
   return {
     lead_id: lead.id,
     nome: lead.nome,
@@ -213,6 +259,7 @@ function mockDiagnostico(lead: Lead): Diagnostico {
       melhor_horario: 'tarde',
       tom_followup: 'amigável e direto, sem pressão',
     },
+    ...auto,
   };
 }
 
@@ -270,8 +317,11 @@ export async function runAgent2(): Promise<Diagnostico[]> {
 
     const diag = buildDiagnostico(lead, result);
     aprovados.push(diag);
+    const pitchLabel = diag.pitch_principal === 'automacao'
+      ? `automacao:${diag.tipo_automacao}`
+      : 'site';
     log.info(
-      `  ✓ ${lead.nome} → ${segmento.macro} / ${segmento.nivel2} (${segmento.confianca}%) — canal: ${diag.canal_recomendado}`
+      `  ✓ ${lead.nome} → ${segmento.macro} / ${segmento.nivel2} (${segmento.confianca}%) — canal: ${diag.canal_recomendado} | pitch: ${pitchLabel}`
     );
   }
 

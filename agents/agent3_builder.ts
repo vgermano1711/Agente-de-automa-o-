@@ -11,7 +11,7 @@ import axios from 'axios';
 import { Diagnostico } from '../types';
 import { log } from '../utils/logger';
 import { dataPath, readJson, writeJson } from '../utils/dataHelpers';
-import { generateContent, buildHTML } from '../regenerar-pages';
+import { generateContent, buildHTML, generatePageAutomacao } from '../regenerar-pages';
 
 async function verifySurgeDeployment(url: string): Promise<boolean> {
   try {
@@ -23,6 +23,9 @@ async function verifySurgeDeployment(url: string): Promise<boolean> {
 }
 
 async function generatePageHTML(diag: Diagnostico): Promise<string> {
+  if (diag.pitch_principal === 'automacao') {
+    return generatePageAutomacao(diag);
+  }
   const content = await generateContent(diag);
   return buildHTML(diag, content);
 }
