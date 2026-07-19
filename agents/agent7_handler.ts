@@ -15,6 +15,7 @@ import { readJson, writeJson, generateId } from '../utils/dataHelpers';
 import { notifyOwner } from '../utils/notifications';
 import { registrarNaCadencia } from './cadencia';
 import { isNaBlacklist, randomShortDelay } from '../utils/antiSpam';
+import { obterOuCriarCobrancaPendente } from '../utils/cobranca';
 
 const client = new Anthropic();
 const RESPOSTAS_FILE     = path.join(process.cwd(), 'data', 'respostas.json');
@@ -656,9 +657,16 @@ async function processCobrancaMensalAuto(): Promise<void> {
 
     const mensalidade = (p as unknown as Record<string, unknown>).mensalidade as number | undefined || 297;
     const pixKey = process.env.VICTOR_PIX_KEY || '';
-    const pixInfo = pixKey
-      ? `Chave PIX: *${pixKey}*\nValor: *R$${mensalidade},00*`
-      : 'Me fala que te mando os dados do PIX agora.';
+    let pixInfo = 'Me fala que te mando os dados do PIX agora.';
+    if (pixKey) {
+      try {
+        const cobranca = obterOuCriarCobrancaPendente(p);
+        pixInfo = `Pix Copia e Cola:\n${cobranca.copia_e_cola}\n\nValor: *R$${mensalidade},00*`;
+      } catch (err) {
+        log.warn(`Agent7: falha ao gerar Pix pra ${p.nome_negocio}: ${(err as Error).message}`);
+        pixInfo = `Chave PIX: *${pixKey}*\nValor: *R$${mensalidade},00*`;
+      }
+    }
 
     const texto =
       `Oi! Tudo bem por aí?\n\n` +

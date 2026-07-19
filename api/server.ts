@@ -26,7 +26,9 @@ import {
 } from '../utils/whatsapp';
 import { whatsappManager } from '../utils/whatsappManager';
 import { handleIncomingWhatsApp } from '../agents/agent9_whatsapp_reply';
-import { createTenantMessageHandler } from '../agents/agent10_tenant_reply';
+import { createTenantMessageHandler, lerConversas } from '../agents/agent10_tenant_reply';
+import { readCobrancas, writeCobrancas, obterOuCriarCobrancaPendente } from '../utils/cobranca';
+import { gerarReciboPDF } from '../utils/gerarRecibo';
 
 const app = express();
 app.use(cors());
@@ -210,6 +212,139 @@ app.get('/api/ativacao/:slug/qr', async (req, res) => {
   if (qr) return res.json({ status: 'qr_ready', qr_string: qr });
 
   return res.json({ status: 'waiting', qr_string: null });
+});
+
+// GET /api/ativacao/:slug/metrics — métricas do próprio negócio (camada analytics)
+app.get('/api/ativacao/:slug/metrics', (req, res) => {
+  const projeto = readProjetos().find((p) => p.slug === req.params.slug);
+  if (!projeto || projeto.tipo_produto !== 'automacao') {
+    return res.status(404).json({ status: 'not_found', message: 'Projeto não encontrado' });
+  }
+  if (!tokenValido(projeto, req)) {
+    return res.status(403).json({ status: 'forbidden', message: 'Link inválido' });
+  }
+
+  const conversas = lerConversas(projeto.slug);
+  const waIds = Object.keys(conversas);
+  if (waIds.length === 0) {
+    return res.json({ nome_negocio: projeto.nome_negocio, sem_dados: true });
+  }
+
+  const seteDiasAtras = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  let totalMensagensCliente = 0;
+  let totalMensagensBot = 0;
+  let conversasUltimos7Dias = 0;
+  const sinais = { agendamento_pedido: 0, interesse_alto: 0, duvida_resolvida: 0, nenhum: 0 };
+
+  for (const waId of waIds) {
+    const mensagens = conversas[waId].mensagens;
+    const primeira = mensagens[0]?.timestamp ? new Date(mensagens[0].timestamp).getTime() : 0;
+    if (primeira >= seteDiasAtras) conversasUltimos7Dias++;
+
+    for (const m of mensagens) {
+      if (m.role === 'cliente') totalMensagensCliente++;
+      if (m.role === 'bot') {
+        totalMensagensBot++;
+        const s = m.sinal || 'nenhum';
+        sinais[s] = (sinais[s] || 0) + 1;
+      }
+    }
+  }
+
+  res.json({
+    nome_negocio: projeto.nome_negocio,
+    sem_dados: false,
+    total_conversas: waIds.length,
+    conversas_ultimos_7_dias: conversasUltimos7Dias,
+    total_mensagens_cliente: totalMensagensCliente,
+    total_mensagens_bot: totalMensagensBot,
+    // Estimativa da IA a partir do teor da conversa — não é confirmação de venda/agendamento real.
+    leads_convertidos_proxy: sinais.agendamento_pedido + sinais.interesse_alto,
+    sinais,
+  });
+});
+
+// GET /api/ativacao/:slug/cobranca — cobrança pendente + últimos recibos (camada fintech)
+app.get('/api/ativacao/:slug/cobranca', (req, res) => {
+  const projeto = readProjetos().find((p) => p.slug === req.params.slug);
+  if (!projeto || projeto.tipo_produto !== 'automacao') {
+    return res.status(404).json({ status: 'not_found', message: 'Projeto não encontrado' });
+  }
+  if (!tokenValido(projeto, req)) {
+    return res.status(403).json({ status: 'forbidden', message: 'Link inválido' });
+  }
+
+  const pendente = obterOuCriarCobrancaPendente(projeto);
+  const historico = readCobrancas(projeto.slug)
+    .filter((c) => c.pago_em)
+    .sort((a, b) => (b.pago_em! > a.pago_em! ? 1 : -1))
+    .slice(0, 3)
+    .map((c) => ({ id: c.id, valor: c.valor, pago_em: c.pago_em, tem_recibo: !!c.recibo_path }));
+
+  res.json({
+    pendente: {
+      id: pendente.id,
+      valor: pendente.valor,
+      copia_e_cola: pendente.copia_e_cola,
+      pago: !!pendente.pago_em,
+    },
+    recibos_recentes: historico,
+  });
+});
+
+// GET /api/ativacao/:slug/recibo/:id — download do PDF do recibo (camada compliance)
+app.get('/api/ativacao/:slug/recibo/:id', (req, res) => {
+  const projeto = readProjetos().find((p) => p.slug === req.params.slug);
+  if (!projeto || projeto.tipo_produto !== 'automacao') {
+    return res.status(404).json({ error: 'Projeto não encontrado' });
+  }
+  if (!tokenValido(projeto, req)) {
+    return res.status(403).json({ error: 'Link inválido' });
+  }
+  const id = req.params.id.replace(/[^a-zA-Z0-9_-]/g, '');
+  const filePath = path.join(process.cwd(), 'data', 'clients', projeto.slug, 'recibos', `${id}.pdf`);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Recibo não encontrado' });
+  }
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="recibo-${id}.pdf"`);
+  fs.createReadStream(filePath).pipe(res);
+});
+
+// PATCH /api/projetos/:id/cobranca-automacao/pagar — vendedor confirma pagamento da mensalidade
+// pendente do mês atual (cria a cobrança on-demand se ainda não existir, mesma lógica do painel do cliente)
+app.patch('/api/projetos/:id/cobranca-automacao/pagar', async (req, res) => {
+  const lista = readProjetos();
+  const idx = lista.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Projeto não encontrado' });
+  const projeto = lista[idx];
+  if (projeto.tipo_produto !== 'automacao') {
+    return res.status(400).json({ error: 'Projeto não é do tipo automação' });
+  }
+
+  const pendente = obterOuCriarCobrancaPendente(projeto);
+  const cobrancas = readCobrancas(projeto.slug);
+  const cIdx = cobrancas.findIndex((c) => c.id === pendente.id);
+  if (cobrancas[cIdx].pago_em) return res.json({ success: true, ja_estava_pago: true, cobranca: cobrancas[cIdx] });
+
+  const pagoEm = new Date().toISOString();
+  const reciboPath = await gerarReciboPDF({
+    slug: projeto.slug,
+    cobrancaId: cobrancas[cIdx].id,
+    nomeNegocio: projeto.nome_negocio,
+    tipo: cobrancas[cIdx].tipo,
+    valor: cobrancas[cIdx].valor,
+    pagoEm,
+    txid: cobrancas[cIdx].txid,
+  });
+
+  cobrancas[cIdx] = { ...cobrancas[cIdx], pago_em: pagoEm, recibo_path: reciboPath || undefined };
+  writeCobrancas(projeto.slug, cobrancas);
+
+  lista[idx] = { ...projeto, ultima_cobranca_id: cobrancas[cIdx].id, ultima_cobranca_paga_em: pagoEm };
+  writeProjetos(lista);
+
+  res.json({ success: true, cobranca: cobrancas[cIdx] });
 });
 
 // GET /ativacao/:slug — painel público onde o cliente escaneia o próprio QR

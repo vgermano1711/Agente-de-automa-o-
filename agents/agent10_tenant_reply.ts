@@ -20,23 +20,26 @@ const client = new Anthropic();
 
 const PROJETOS_FILE = path.join(process.cwd(), 'data', 'projetos.json');
 
-interface MensagemConversa {
+export type SinalConversa = 'agendamento_pedido' | 'interesse_alto' | 'duvida_resolvida' | 'nenhum';
+
+export interface MensagemConversa {
   role: 'cliente' | 'bot';
   texto: string;
   timestamp: string;
+  sinal?: SinalConversa; // só em mensagens role:'bot' — sinal de interesse detectado pela IA
 }
 
-type ConversasClienteFile = Record<string, { mensagens: MensagemConversa[] }>;
+export type ConversasClienteFile = Record<string, { mensagens: MensagemConversa[] }>;
 
 function clienteDataDir(slug: string): string {
   return path.join(process.cwd(), 'data', 'clients', slug);
 }
 
-function conversasFile(slug: string): string {
+export function conversasFile(slug: string): string {
   return path.join(clienteDataDir(slug), 'conversas.json');
 }
 
-function lerConversas(slug: string): ConversasClienteFile {
+export function lerConversas(slug: string): ConversasClienteFile {
   const file = conversasFile(slug);
   if (!fs.existsSync(file)) return {};
   try {
@@ -86,20 +89,40 @@ ${historicoTexto}NOVA MENSAGEM DO CLIENTE:
 Responda como atendente real do negócio, educado e direto. Máximo 3 frases curtas.
 Se perguntarem sobre agendamento, use o horário de funcionamento informado — não invente disponibilidade específica de horário/vaga.
 Se a dúvida não estiver coberta pelas informações acima, diga que vai verificar e que alguém do negócio retorna em breve.
-Retorne APENAS o texto da resposta, sem aspas, sem explicações.`;
+Retorne o texto da resposta e, numa última linha separada, um marcador de controle interno — o cliente NUNCA vê essa linha, ela é só pra registro:
+---SINAL:agendamento_pedido--- (se o cliente pediu horário/agendamento)
+---SINAL:interesse_alto--- (se demonstrou forte interesse mas não pediu agendamento)
+---SINAL:duvida_resolvida--- (se só tirou dúvida simples, sem sinal de interesse maior)
+---SINAL:nenhum--- (qualquer outro caso)
+Use exatamente um desses marcadores, sempre na última linha.`;
 }
 
-async function gerarResposta(projeto: Projeto, historico: MensagemConversa[], novaMensagem: string): Promise<string> {
+const SINAIS_VALIDOS: SinalConversa[] = ['agendamento_pedido', 'interesse_alto', 'duvida_resolvida', 'nenhum'];
+
+export function extrairSinal(textoCompleto: string): { texto: string; sinal: SinalConversa } {
+  const match = textoCompleto.match(/---SINAL:(\w+)---\s*$/);
+  const bruto = match?.[1];
+  const sinal = SINAIS_VALIDOS.includes(bruto as SinalConversa) ? (bruto as SinalConversa) : 'nenhum';
+  const texto = match ? textoCompleto.slice(0, match.index).trim() : textoCompleto.trim();
+  return { texto, sinal };
+}
+
+async function gerarResposta(
+  projeto: Projeto,
+  historico: MensagemConversa[],
+  novaMensagem: string
+): Promise<{ texto: string; sinal: SinalConversa }> {
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 300,
       messages: [{ role: 'user', content: montarPrompt(projeto, historico, novaMensagem) }],
     });
-    return (response.content[0] as { type: string; text: string }).text.trim();
+    const bruto = (response.content[0] as { type: string; text: string }).text.trim();
+    return extrairSinal(bruto);
   } catch (err) {
     log.warn(`Agent10 (${projeto.slug}) geração falhou: ${(err as Error).message}`);
-    return 'Recebi sua mensagem! Em instantes alguém retorna — obrigado pelo contato.';
+    return { texto: 'Recebi sua mensagem! Em instantes alguém retorna — obrigado pelo contato.', sinal: 'nenhum' };
   }
 }
 
@@ -115,9 +138,9 @@ export function createTenantMessageHandler(projetoInicial: Projeto, conn: WhatsA
     const textoRecebido = isMedia && !body ? '[mídia recebida]' : body;
     conversa.mensagens.push({ role: 'cliente', texto: textoRecebido, timestamp: new Date().toISOString() });
 
-    const resposta = await gerarResposta(projeto, conversa.mensagens, textoRecebido);
+    const { texto: resposta, sinal } = await gerarResposta(projeto, conversa.mensagens, textoRecebido);
 
-    conversa.mensagens.push({ role: 'bot', texto: resposta, timestamp: new Date().toISOString() });
+    conversa.mensagens.push({ role: 'bot', texto: resposta, timestamp: new Date().toISOString(), sinal });
     conversas[from] = conversa;
     salvarConversas(slug, conversas);
 

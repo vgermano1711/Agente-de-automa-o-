@@ -56,6 +56,35 @@
     .banner.info    { background: #1d2d35; border: 1px solid #3b4a54; color: #8696a0; }
     .banner.success { background: #12352a; border: 1px solid #00a88444; color: #00a884; }
     .banner.error   { background: #3b1212; border: 1px solid #ef444444; color: #ef4444; }
+
+    /* ── Painel pós-conexão: métricas + cobrança ── */
+    #painel-cliente { display: none; flex-direction: column; gap: 22px; width: 100%; }
+    .secao-titulo { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: #8696a0; margin-bottom: 10px; }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+    .stat-card { background: #1d2d35; border: 1px solid #2a3942; border-radius: 12px; padding: 14px; text-align: center; }
+    .stat-card .num { font-size: 1.5rem; font-weight: 700; color: #00a884; }
+    .stat-card .lbl { font-size: 0.72rem; color: #8696a0; margin-top: 2px; }
+    .stat-nota { font-size: 0.7rem; color: #8696a0; margin-top: 8px; text-align: center; }
+
+    .cobranca-box { background: #1d2d35; border: 1px solid #2a3942; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+    .cobranca-valor { font-size: 1.6rem; font-weight: 700; }
+    .cobranca-valor.pago { color: #00a884; }
+    .cobranca-qr { width: 160px; height: 160px; background: #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .btn-copiar {
+      width: 100%; padding: 11px; background: #2a3942; border: 1px solid #3b4a54; border-radius: 8px;
+      color: #e9edef; font-size: 0.85rem; cursor: pointer;
+    }
+    .btn-copiar:hover { border-color: #00a884; }
+    .btn-copiar.copiado { color: #00a884; border-color: #00a884; }
+
+    .recibos-lista { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+    .recibo-item {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.82rem; padding: 8px 10px; background: #1d2d35; border-radius: 8px;
+    }
+    .recibo-item a { color: #00a884; text-decoration: none; font-size: 0.78rem; }
+    .sem-dados { font-size: 0.82rem; color: #8696a0; text-align: center; padding: 8px; }
   </style>
 </head>
 <body>
@@ -84,6 +113,24 @@
   </div>
 
   <div id="banner-area"></div>
+
+  <div id="painel-cliente">
+    <div>
+      <div class="secao-titulo">Sua atividade</div>
+      <div class="stat-grid" id="metricas-grid"></div>
+      <div class="stat-nota" id="metricas-nota"></div>
+    </div>
+
+    <div>
+      <div class="secao-titulo">Mensalidade</div>
+      <div class="cobranca-box" id="cobranca-box"></div>
+    </div>
+
+    <div>
+      <div class="secao-titulo">Recibos</div>
+      <div class="recibos-lista" id="recibos-lista"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -193,7 +240,85 @@ function showConnected() {
   document.getElementById('qr-connected').style.display = 'flex';
   setStatus('Conectado! Seu assistente automático já está funcionando ✅', 'ok');
   document.getElementById('qr-steps').style.display = 'none';
-  document.getElementById('subtitle').textContent = 'Tudo pronto — pode fechar esta janela';
+  document.getElementById('subtitle').textContent = 'Tudo pronto — acompanhe sua atividade e cobrança abaixo';
+  document.getElementById('painel-cliente').style.display = 'flex';
+  carregarMetricas();
+  carregarCobranca();
+}
+
+// ── Métricas (analytics) ─────────────────────────────────────────────────
+async function carregarMetricas() {
+  const grid = document.getElementById('metricas-grid');
+  const nota = document.getElementById('metricas-nota');
+  try {
+    const r = await fetch('/api/ativacao/' + encodeURIComponent(slug) + '/metrics' + qs);
+    const data = await r.json();
+    if (data.sem_dados) {
+      grid.innerHTML = '<div class="sem-dados" style="grid-column:1/-1">Ainda sem conversas registradas.</div>';
+      return;
+    }
+    grid.innerHTML =
+      stat(data.total_conversas, 'conversas no total') +
+      stat(data.conversas_ultimos_7_dias, 'últimos 7 dias') +
+      stat(data.total_mensagens_bot, 'respostas do assistente') +
+      stat(data.leads_convertidos_proxy, 'sinais de interesse');
+    nota.textContent = '"Sinais de interesse" é uma estimativa da IA a partir do teor da conversa — não é confirmação de agendamento ou venda.';
+  } catch {
+    grid.innerHTML = '<div class="sem-dados" style="grid-column:1/-1">Não foi possível carregar as métricas agora.</div>';
+  }
+}
+
+function stat(num, lbl) {
+  return '<div class="stat-card"><div class="num">' + (num ?? 0) + '</div><div class="lbl">' + lbl + '</div></div>';
+}
+
+// ── Cobrança (fintech) ────────────────────────────────────────────────────
+async function carregarCobranca() {
+  const box = document.getElementById('cobranca-box');
+  const listaRecibos = document.getElementById('recibos-lista');
+  try {
+    const r = await fetch('/api/ativacao/' + encodeURIComponent(slug) + '/cobranca' + qs);
+    const data = await r.json();
+    const p = data.pendente;
+
+    if (p.pago) {
+      box.innerHTML = '<div class="cobranca-valor pago">✅ Mensalidade em dia</div>';
+    } else {
+      box.innerHTML =
+        '<div class="cobranca-valor">R$ ' + p.valor.toFixed(2).replace('.', ',') + '</div>' +
+        '<div class="cobranca-qr"><canvas id="pix-canvas"></canvas></div>' +
+        '<button class="btn-copiar" id="btn-copiar-pix">Copiar código Pix</button>';
+
+      const canvas = document.getElementById('pix-canvas');
+      QRCode.toCanvas(canvas, p.copia_e_cola, { width: 140, margin: 1 }).catch(() => {});
+
+      document.getElementById('btn-copiar-pix').addEventListener('click', async (ev) => {
+        try {
+          await navigator.clipboard.writeText(p.copia_e_cola);
+          ev.target.textContent = 'Copiado!';
+          ev.target.classList.add('copiado');
+          setTimeout(() => { ev.target.textContent = 'Copiar código Pix'; ev.target.classList.remove('copiado'); }, 2500);
+        } catch {
+          ev.target.textContent = 'Não foi possível copiar — selecione manualmente';
+        }
+      });
+    }
+
+    if (!data.recibos_recentes || data.recibos_recentes.length === 0) {
+      listaRecibos.innerHTML = '<div class="sem-dados">Nenhum recibo ainda.</div>';
+    } else {
+      listaRecibos.innerHTML = data.recibos_recentes.map((rec) => {
+        const data_ = new Date(rec.pago_em).toLocaleDateString('pt-BR');
+        const valor = rec.valor.toFixed(2).replace('.', ',');
+        const link = rec.tem_recibo
+          ? '<a href="/api/ativacao/' + encodeURIComponent(slug) + '/recibo/' + encodeURIComponent(rec.id) + qs + '" target="_blank">Baixar PDF</a>'
+          : '<span style="color:#8696a0">sem PDF</span>';
+        return '<div class="recibo-item"><span>' + data_ + ' — R$ ' + valor + '</span>' + link + '</div>';
+      }).join('');
+    }
+  } catch {
+    box.innerHTML = '<div class="sem-dados">Não foi possível carregar a cobrança agora.</div>';
+  }
 }
 
 carregarStatus();

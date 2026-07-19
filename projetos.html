@@ -181,6 +181,9 @@
     if (p.status === 'entregue' && !isAuto && !p.segunda_parcela_paga) {
       acoes += `<button class="btn" onclick="confirmarSegundaParcela('${p.id}')">2ª parcela recebida</button>`;
     }
+    if (p.status === 'ativo' && isAuto) {
+      acoes += `<button class="btn" onclick="confirmarCobrancaAutomacao('${p.id}')">Mensalidade recebida</button>`;
+    }
     if (p.entrega_url) {
       acoes += `<a class="btn" href="${p.entrega_url}" target="_blank">Ver site</a>`;
     }
@@ -296,6 +299,15 @@
     try {
       await fetch(`/api/projetos/${id}/segunda-parcela`, { method: 'PATCH' });
       toast('Segunda parcela confirmada!');
+      load();
+    } catch { toast('Erro ao confirmar', true); }
+  }
+
+  async function confirmarCobrancaAutomacao(id) {
+    try {
+      const r = await fetch(`/api/projetos/${id}/cobranca-automacao/pagar`, { method: 'PATCH' });
+      const data = await r.json();
+      toast(data.ja_estava_pago ? 'Essa mensalidade já estava marcada como paga.' : 'Mensalidade confirmada — recibo gerado!');
       load();
     } catch { toast('Erro ao confirmar', true); }
   }

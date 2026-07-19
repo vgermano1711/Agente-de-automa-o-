@@ -155,6 +155,9 @@ export interface OnboardingInfo {
   horario_funcionamento?: string;
   catalogo?: string;
   msg_boas_vindas?: string;
+  // Automação — camada fintech (identidade pro Pix Copia e Cola)
+  pix_recebedor_nome?: string;
+  pix_recebedor_cidade?: string;
 }
 
 export interface Projeto {
@@ -184,6 +187,24 @@ export interface Projeto {
   upsell_automacao_enviado_em?: string;
   // Painel de ativação — token opaco pra evitar que o slug (previsível) sozinho dê acesso ao QR do cliente
   ativacao_token?: string;
+  // Camada fintech — espelha a cobrança mais recente de data/clients/<slug>/cobranca.json
+  ultima_cobranca_id?: string;
+  ultima_cobranca_paga_em?: string;
+}
+
+export interface CobrancaTenant {
+  id: string;
+  tipo: 'mensalidade' | 'segunda_parcela';
+  valor: number;
+  txid: string;
+  criado_em: string;
+  copia_e_cola: string;
+  pago_em?: string;
+  recibo_path?: string;
+}
+
+export interface CobrancaTenantFile {
+  cobrancas: CobrancaTenant[];
 }
 
 export interface Indicacao {
