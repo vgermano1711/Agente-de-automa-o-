@@ -19,11 +19,11 @@ import { Mensagem, Diagnostico } from '../types';
 import { log } from '../utils/logger';
 import { notifyOwner } from '../utils/notifications';
 import { dataPath, readJson, writeJson, today, generateId } from '../utils/dataHelpers';
+import { isNaBlacklist, randomDelay } from '../utils/antiSpam';
 import { registrarNaCadencia } from './cadencia';
 
 const PROBE_QUEUE_FILE         = path.join(process.cwd(), 'data', 'probe_queue.json');
 const HISTORICO_CONTATOS_FILE  = path.join(process.cwd(), 'data', 'historico_contatos.json');
-const BLACKLIST_FILE           = path.join(process.cwd(), 'data', 'blacklist.json');
 
 interface ProbeQueueEntry {
   id: string;
@@ -66,12 +66,6 @@ function jaFoiAcionadoPorTelefone(telefone: string): boolean {
   const norm = telefone.replace(/\D/g, '').replace(/^55/, '');
   if (!norm || norm.length < 10) return false;
   return getHistorico().some((h) => h.telefone.replace(/\D/g, '').replace(/^55/, '') === norm);
-}
-
-function isNaBlacklist(telefone: string): boolean {
-  const bl = readJson<string[]>(BLACKLIST_FILE) || [];
-  const norm = telefone.replace(/\D/g, '').replace(/^55/, '');
-  return bl.some((b) => b.replace(/\D/g, '').replace(/^55/, '') === norm);
 }
 
 async function checkLPHealth(url: string | null | undefined): Promise<boolean> {
@@ -380,16 +374,6 @@ function getRecentFilePairs(): FilePair[] {
 
 function getDiagnosticosFromFile(diagFile: string): Diagnostico[] {
   return readJson<Diagnostico[]>(diagFile) || [];
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-function randomDelay(): Promise<void> {
-  const ms = Math.floor(Math.random() * (180_000 - 60_000) + 60_000); // 1–3 min
-  log.info(`  ⏳ Aguardando ${Math.round(ms / 1000)}s antes do próximo envio...`);
-  return sleep(ms);
 }
 
 async function sendEmail(msg: Mensagem): Promise<void> {

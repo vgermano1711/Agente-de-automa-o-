@@ -21,6 +21,7 @@ import { CadenciaLead, FollowUpEntry, Diagnostico, Mensagem } from '../types';
 import { isBotNumber } from './agent9_whatsapp_reply';
 import { log } from '../utils/logger';
 import { readJson, writeJson, today } from '../utils/dataHelpers';
+import { isNaBlacklist, randomDelay } from '../utils/antiSpam';
 
 async function sendWhatsAppViaCadencia(phone: string, message: string): Promise<boolean> {
   const apiPort = process.env.PORT || '3000';
@@ -313,6 +314,14 @@ export async function processarCadencias(): Promise<void> {
       continue;
     }
 
+    // Respeita opt-out — não reenviar pra quem pediu pra parar
+    if (isNaBlacklist(lead.telefone)) {
+      lead.status = 'arquivado';
+      lead.data_proximo_contato = null;
+      log.info(`  ✗ ${lead.nome_negocio} — número na blacklist, arquivando sem enviar`);
+      continue;
+    }
+
     const mensagem = isPropostaStep
       ? lead.mensagem_proposta!
       : await gerarMensagemFollowup(lead, etapa);
@@ -328,8 +337,12 @@ export async function processarCadencias(): Promise<void> {
     const canal = (!isPropostaStep && etapa === 7) ? lead.canal_secundario : lead.canal_primario;
     if (canal === 'whatsapp' && lead.telefone) {
       enviado = await sendWhatsAppViaCadencia(lead.telefone, mensagem);
-      if (enviado) log.info(`  ✓ WhatsApp enviado para ${lead.nome_negocio}`);
-      else log.error(`  ✗ Erro WhatsApp ${lead.nome_negocio}`);
+      if (enviado) {
+        log.info(`  ✓ WhatsApp enviado para ${lead.nome_negocio}`);
+        await randomDelay(); // espaça os envios do lote — evita rajada de follow-ups no mesmo horário
+      } else {
+        log.error(`  ✗ Erro WhatsApp ${lead.nome_negocio}`);
+      }
     } else if (canal === 'email') {
       enviado = await sendFollowUpEmail(lead, mensagem);
       if (enviado) log.info(`  ✓ Email enviado para ${lead.nome_negocio}`);

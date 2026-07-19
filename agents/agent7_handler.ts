@@ -14,6 +14,7 @@ import { log } from '../utils/logger';
 import { readJson, writeJson, generateId } from '../utils/dataHelpers';
 import { notifyOwner } from '../utils/notifications';
 import { registrarNaCadencia } from './cadencia';
+import { isNaBlacklist, randomShortDelay } from '../utils/antiSpam';
 
 const client = new Anthropic();
 const RESPOSTAS_FILE     = path.join(process.cwd(), 'data', 'respostas.json');
@@ -1026,6 +1027,13 @@ async function enviarRelatorioMatinal(): Promise<void> {
   }
 }
 
+// Limite de apresentações completas enviadas por ciclo do Agent7 (a cada intervalo, ver
+// startAgent7Loop). Evita que uma fila represada (ex: bot ficou offline por um tempo e
+// muitas entradas "maduraram" ao mesmo tempo) dispare uma rajada de mensagens simultâneas —
+// gatilho clássico de bloqueio por alto volume no WhatsApp. O excedente fica em `remaining`
+// e é retomado nos próximos ciclos, no ritmo normal.
+const PROBE_MAX_ENVIOS_POR_CICLO = 5;
+
 async function processProbeQueue(): Promise<void> {
   const queue = readJson<ProbeQueueEntry[]>(PROBE_QUEUE_FILE) || [];
   if (queue.length === 0) return;
@@ -1051,6 +1059,20 @@ async function processProbeQueue(): Promise<void> {
       descartados++;
       continue; // remove da fila sem enviar
     }
+
+    if (isNaBlacklist(entry.telefone)) {
+      log.info(`Agent7: ${entry.nome_negocio} — número na blacklist, descartando sem enviar`);
+      updateMsgStatus(entry.msg_file, entry.msg_id, 'bot_descartado');
+      descartados++;
+      continue;
+    }
+
+    if (enviados >= PROBE_MAX_ENVIOS_POR_CICLO) {
+      remaining.push(entry); // fila represada — retoma no próximo ciclo, sem rajada
+      continue;
+    }
+
+    if (enviados > 0) await randomShortDelay(); // espaça os envios dentro do mesmo ciclo
 
     // Humano (ou silêncio) — envia apresentação completa
     try {
@@ -1346,8 +1368,14 @@ export function startAgent7Loop({ intervalMinutes = 5 }: { intervalMinutes?: num
 
   let ciclo = 0;
   const CICLOS_POR_HORA = Math.round(60 / intervalMinutes);
+  let emExecucao = false;
 
   const run = async () => {
+    if (emExecucao) {
+      log.warn('Agente 7: ciclo anterior ainda em execução (provável fila represada) — pulando este tick');
+      return;
+    }
+    emExecucao = true;
     try {
       await processReplies(auth);
       await processProbeQueue();
@@ -1373,6 +1401,8 @@ export function startAgent7Loop({ intervalMinutes = 5 }: { intervalMinutes?: num
       }
     } catch (err) {
       log.error(`Agente 7 erro: ${(err as Error).message}`);
+    } finally {
+      emExecucao = false;
     }
   };
 
