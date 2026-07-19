@@ -11,6 +11,15 @@ import { log } from './logger';
 
 const BLACKLIST_FILE = path.join(process.cwd(), 'data', 'blacklist.json');
 
+/**
+ * Kill-switch manual pro canal de e-mail de prospecção/acionamento (Agente 8 e
+ * Cadência). Não afeta WhatsApp nem o monitoramento de respostas do Agente 7 —
+ * só o disparo de novos e-mails de prospecção/follow-up.
+ */
+export function emailProspeccaoPausada(): boolean {
+  return process.env.EMAIL_PROSPECCAO_PAUSADA === 'true';
+}
+
 export function isNaBlacklist(telefone: string): boolean {
   const bl = readJson<string[]>(BLACKLIST_FILE) || [];
   const norm = telefone.replace(/\D/g, '').replace(/^55/, '');

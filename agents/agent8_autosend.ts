@@ -19,7 +19,7 @@ import { Mensagem, Diagnostico } from '../types';
 import { log } from '../utils/logger';
 import { notifyOwner } from '../utils/notifications';
 import { dataPath, readJson, writeJson, today, generateId } from '../utils/dataHelpers';
-import { isNaBlacklist, randomDelay } from '../utils/antiSpam';
+import { isNaBlacklist, randomDelay, emailProspeccaoPausada } from '../utils/antiSpam';
 import { registrarNaCadencia } from './cadencia';
 
 const PROBE_QUEUE_FILE         = path.join(process.cwd(), 'data', 'probe_queue.json');
@@ -481,6 +481,13 @@ export async function runAgent8(): Promise<void> {
         const janStr = descreveJanelas(janelas);
         const seg = diag?.segmento?.micro?.[0] || diag?.segmento?.nivel2 || diag?.categoria || 'geral';
         log.info(`  ⏰ ${msg.nome_negocio} [${seg}] — melhor janela ${janStr} (agora ${hora}h), postergando`);
+        postergados++;
+        continue;
+      }
+
+      // ── Pausa manual de e-mail (acionamento/prospecção) ────────────────
+      if (msg.canal === 'email' && emailProspeccaoPausada()) {
+        log.info(`  ⏸ ${msg.nome_negocio} — envio de e-mail pausado manualmente, postergando`);
         postergados++;
         continue;
       }

@@ -21,7 +21,7 @@ import { CadenciaLead, FollowUpEntry, Diagnostico, Mensagem } from '../types';
 import { isBotNumber } from './agent9_whatsapp_reply';
 import { log } from '../utils/logger';
 import { readJson, writeJson, today } from '../utils/dataHelpers';
-import { isNaBlacklist, randomDelay } from '../utils/antiSpam';
+import { isNaBlacklist, randomDelay, emailProspeccaoPausada } from '../utils/antiSpam';
 
 async function sendWhatsAppViaCadencia(phone: string, message: string): Promise<boolean> {
   const apiPort = process.env.PORT || '3000';
@@ -344,6 +344,10 @@ export async function processarCadencias(): Promise<void> {
         log.error(`  ✗ Erro WhatsApp ${lead.nome_negocio}`);
       }
     } else if (canal === 'email') {
+      if (emailProspeccaoPausada()) {
+        log.info(`  ⏸ ${lead.nome_negocio} — follow-up por e-mail pausado manualmente, tenta de novo amanhã`);
+        continue;
+      }
       enviado = await sendFollowUpEmail(lead, mensagem);
       if (enviado) log.info(`  ✓ Email enviado para ${lead.nome_negocio}`);
     } else {
