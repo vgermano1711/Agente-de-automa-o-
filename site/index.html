@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANTERO — Estúdio Criativo</title>
+<meta name="description" content="Site estático sem banco de dados, pronto para você editar manualmente.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- textura de grão, puramente visual (CSS/SVG, sem imagens externas) -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- cursor customizado (desativa sozinho em telas de toque, ver script.js) -->
+  <div class="cursor-dot" aria-hidden="true"></div>
+  <div class="cursor-ring" aria-hidden="true"></div>
+
+  <div class="progress-bar" aria-hidden="true"><div class="progress-bar__fill" id="progressFill"></div></div>
+
+  <header class="header" id="header">
+    <div class="header__inner">
+      <!-- TROQUE AQUI: seu nome / marca -->
+      <a href="#topo" class="logo">Antero<span class="logo__dot">.</span></a>
+
+      <nav class="nav" id="nav">
+        <a href="#sobre" class="nav__link">Sobre</a>
+        <a href="#servicos" class="nav__link">Serviços</a>
+        <a href="#projetos" class="nav__link">Projetos</a>
+        <a href="#depoimentos" class="nav__link">Depoimentos</a>
+        <a href="#contato" class="nav__link nav__link--cta">Fale comigo</a>
+      </nav>
+
+      <button class="burger" id="burger" aria-label="Abrir menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="topo">
+
+    <!-- ================= HERO ================= -->
+    <section class="hero" id="hero">
+      <div class="hero__bg" aria-hidden="true">
+        <span class="blob blob--a"></span>
+        <span class="blob blob--b"></span>
+      </div>
+
+      <p class="hero__eyebrow reveal">Disponível para novos projetos — 2026</p>
+
+      <h1 class="hero__title">
+        <span class="reveal-word">Ideias</span>
+        <span class="reveal-word">que</span>
+        <span class="reveal-word">viram</span>
+        <span class="reveal-word hero__title--italic">produto.</span>
+      </h1>
+
+      <!-- TROQUE AQUI: sua frase de efeito -->
+      <p class="hero__subtitle reveal">
+        Um espaço para mostrar seu trabalho, seus serviços ou seu projeto —
+        sem uma linha de backend, sem banco de dados. Só HTML, CSS e JS puros,
+        prontos pra você preencher do seu jeito.
+      </p>
+
+      <div class="hero__actions reveal">
+        <a href="#projetos" class="btn btn--primary magnetic">Ver projetos</a>
+        <a href="#contato" class="btn btn--ghost magnetic">Fale comigo →</a>
+      </div>
+
+      <a href="#sobre" class="scroll-cue" aria-label="Rolar para baixo">
+        <span></span>
+      </a>
+    </section>
+
+    <!-- ================= MARQUEE ================= -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track">
+        <span>DESIGN&nbsp;</span><span>·</span><span>&nbsp;DESENVOLVIMENTO&nbsp;</span><span>·</span>
+        <span>&nbsp;ESTRATÉGIA&nbsp;</span><span>·</span><span>&nbsp;SEM BANCO DE DADOS&nbsp;</span><span>·</span>
+        <span>&nbsp;100% ESTÁTICO&nbsp;</span><span>·</span>
+        <span>DESIGN&nbsp;</span><span>·</span><span>&nbsp;DESENVOLVIMENTO&nbsp;</span><span>·</span>
+        <span>&nbsp;ESTRATÉGIA&nbsp;</span><span>·</span><span>&nbsp;SEM BANCO DE DADOS&nbsp;</span><span>·</span>
+        <span>&nbsp;100% ESTÁTICO&nbsp;</span><span>·</span>
+      </div>
+    </div>
+
+    <!-- ================= SOBRE ================= -->
+    <section class="about" id="sobre">
+      <div class="about__grid">
+        <h2 class="section-title reveal">
+          <span class="section-title__num">01</span>
+          Sobre
+        </h2>
+
+        <div class="about__content">
+          <!-- TROQUE AQUI: seu texto de apresentação -->
+          <p class="about__lead reveal">
+            Eu sou <strong>[seu nome]</strong>. Trabalho com [sua área — ex.: design,
+            desenvolvimento, fotografia, consultoria] e construí este site pra
+            reunir meus projetos e facilitar o contato — sem depender de nenhum
+            banco de dados ou servidor, só arquivos estáticos que qualquer
+            hospedagem gratuita aceita.
+          </p>
+
+          <div class="stats reveal">
+            <div class="stat">
+              <span class="stat__num" data-count="42">0</span>
+              <span class="stat__label">Projetos entregues</span>
+            </div>
+            <div class="stat">
+              <span class="stat__num" data-count="18">0</span>
+              <span class="stat__label">Clientes atendidos</span>
+            </div>
+            <div class="stat">
+              <span class="stat__num" data-count="5">0</span>
+              <span class="stat__label">Anos de estrada</span>
+            </div>
+            <div class="stat">
+              <span class="stat__num" data-count="100">0</span>
+              <span class="stat__label">% estático, sem BD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SERVIÇOS ================= -->
+    <section class="services" id="servicos">
+      <h2 class="section-title reveal">
+        <span class="section-title__num">02</span>
+        O que eu faço
+      </h2>
+
+      <!-- TROQUE AQUI: seus serviços/produtos. Duplique o .service-card à vontade -->
+      <div class="services__grid">
+        <article class="service-card reveal">
+          <span class="service-card__index">01</span>
+          <h3>Identidade visual</h3>
+          <p>Marca, paleta e tipografia com personalidade — nada de template genérico.</p>
+        </article>
+        <article class="service-card reveal">
+          <span class="service-card__index">02</span>
+          <h3>Sites estáticos</h3>
+          <p>Páginas rápidas, sem banco de dados, fáceis de hospedar e de manter.</p>
+        </article>
+        <article class="service-card reveal">
+          <span class="service-card__index">03</span>
+          <h3>Conteúdo &amp; texto</h3>
+          <p>Copy direta, sem clichê de IA, pensada pra quem vai realmente ler.</p>
+        </article>
+        <article class="service-card reveal">
+          <span class="service-card__index">04</span>
+          <h3>Consultoria</h3>
+          <p>Uma conversa honesta sobre o que faz sentido construir primeiro.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= PROJETOS ================= -->
+    <section class="portfolio" id="projetos">
+      <h2 class="section-title reveal">
+        <span class="section-title__num">03</span>
+        Projetos selecionados
+      </h2>
+
+      <!-- TROQUE AQUI: seus projetos. Cada .project-card é independente -->
+      <div class="portfolio__grid">
+        <article class="project-card reveal" data-tilt>
+          <div class="project-card__media project-card__media--a"></div>
+          <div class="project-card__info">
+            <h3>Projeto Um</h3>
+            <p>Branding &amp; site</p>
+          </div>
+        </article>
+        <article class="project-card reveal" data-tilt>
+          <div class="project-card__media project-card__media--b"></div>
+          <div class="project-card__info">
+            <h3>Projeto Dois</h3>
+            <p>Landing page</p>
+          </div>
+        </article>
+        <article class="project-card reveal" data-tilt>
+          <div class="project-card__media project-card__media--c"></div>
+          <div class="project-card__info">
+            <h3>Projeto Três</h3>
+            <p>Identidade visual</p>
+          </div>
+        </article>
+        <article class="project-card reveal" data-tilt>
+          <div class="project-card__media project-card__media--d"></div>
+          <div class="project-card__info">
+            <h3>Projeto Quatro</h3>
+            <p>Aplicativo</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= DEPOIMENTOS ================= -->
+    <section class="testimonials" id="depoimentos">
+      <h2 class="section-title reveal">
+        <span class="section-title__num">04</span>
+        Quem já trabalhou comigo
+      </h2>
+
+      <!-- TROQUE AQUI: depoimentos reais. Adicione/remova .testimonial livremente -->
+      <div class="testimonial-slider reveal">
+        <div class="testimonial-track" id="testimonialTrack">
+          <blockquote class="testimonial">
+            <p>“Entregou exatamente o que a gente precisava, no prazo e sem
+            enrolação. Recomendo de olhos fechados.”</p>
+            <footer>— Nome do Cliente, Empresa X</footer>
+          </blockquote>
+          <blockquote class="testimonial">
+            <p>“O site ficou muito mais rápido e simples de manter do que o
+            anterior. Nenhuma dor de cabeça com banco de dados.”</p>
+            <footer>— Nome do Cliente, Empresa Y</footer>
+          </blockquote>
+          <blockquote class="testimonial">
+            <p>“Profissional, direto e com um olhar de design que fez toda
+            diferença no resultado final.”</p>
+            <footer>— Nome do Cliente, Empresa Z</footer>
+          </blockquote>
+        </div>
+        <div class="testimonial-controls">
+          <button id="testimonialPrev" aria-label="Depoimento anterior">←</button>
+          <div class="testimonial-dots" id="testimonialDots"></div>
+          <button id="testimonialNext" aria-label="Próximo depoimento">→</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CONTATO ================= -->
+    <section class="contact" id="contato">
+      <div class="contact__grid">
+        <div class="contact__intro reveal">
+          <h2 class="section-title">
+            <span class="section-title__num">05</span>
+            Vamos conversar
+          </h2>
+          <!-- TROQUE AQUI: seu contato -->
+          <p>Me manda uma mensagem — o formulário abre seu e-mail já preenchido,
+          sem passar por nenhum servidor.</p>
+          <a class="contact__email" href="mailto:seuemail@exemplo.com">seuemail@exemplo.com</a>
+
+          <div class="socials">
+            <a href="#" target="_blank" rel="noopener">Instagram</a>
+            <a href="#" target="_blank" rel="noopener">LinkedIn</a>
+            <a href="#" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+
+        <!--
+          Formulário 100% front-end: usa mailto:, então não precisa de
+          servidor nem banco de dados. Se um dia você quiser receber as
+          mensagens direto numa caixa de entrada sem escrever backend,
+          troque a action por um serviço tipo Formspree/Web3Forms — isso
+          é opcional e fica por sua conta integrar depois.
+        -->
+        <form class="contact-form reveal" id="contactForm">
+          <div class="form-field">
+            <input type="text" id="name" name="name" required placeholder=" ">
+            <label for="name">Seu nome</label>
+          </div>
+          <div class="form-field">
+            <input type="email" id="email" name="email" required placeholder=" ">
+            <label for="email">Seu e-mail</label>
+          </div>
+          <div class="form-field">
+            <textarea id="message" name="message" rows="4" required placeholder=" "></textarea>
+            <label for="message">Mensagem</label>
+          </div>
+          <button type="submit" class="btn btn--primary magnetic">Enviar mensagem</button>
+          <p class="form-note" id="formNote" role="status"></p>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <a href="#topo" class="logo logo--footer">Antero<span class="logo__dot">.</span></a>
+      <p>© <span id="year"></span> — feito sem banco de dados, só arquivo estático.</p>
+      <a href="#topo" class="to-top">Voltar ao topo ↑</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
