@@ -186,13 +186,13 @@ track.parentElement.addEventListener('mouseleave', () => {
   autoplay = setInterval(() => goToSlide(current + 1), 6000);
 });
 
-/* ---------------------------- Formulário de contato (sem backend) ----------------------------
+/* ---------------------------- Formulário de pedido (sem backend) ----------------------------
    Não existe servidor nem banco de dados aqui: o botão só monta um
    "mailto:" com os dados preenchidos e abre o cliente de e-mail do
-   visitante. Se um dia você quiser receber as mensagens automaticamente,
-   pesquise por "Formspree" ou "Web3Forms" — são serviços prontos que
-   você integra trocando só o atributo action/fetch, sem precisar de
-   banco de dados.
+   visitante. Os campos (nome, telefone, endereço, pedido) foram
+   escolhidos de propósito pra combinar com as tabelas pessoa/endereco/
+   pedido em /database — no site real, esse submit viraria um INSERT
+   nessas tabelas em vez de um mailto:.
 ------------------------------------------------------------------------- */
 const form = document.getElementById('contactForm');
 const formNote = document.getElementById('formNote');
@@ -201,18 +201,21 @@ form.addEventListener('submit', (e) => {
   e.preventDefault();
 
   const name = document.getElementById('name').value.trim();
-  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
   const message = document.getElementById('message').value.trim();
 
-  if (!name || !email || !message) {
+  if (!name || !phone || !address || !message) {
     formNote.textContent = 'Preenche todos os campos antes de enviar.';
     return;
   }
 
-  const subject = encodeURIComponent(`Contato pelo site — ${name}`);
-  const body = encodeURIComponent(`${message}\n\n— ${name} (${email})`);
+  const subject = encodeURIComponent(`Pedido pelo site — ${name}`);
+  const body = encodeURIComponent(
+    `Pedido: ${message}\nEndereço de entrega: ${address}\n\n— ${name} (${phone})`
+  );
   // TROQUE AQUI: use o mesmo e-mail do link "contact__email" no HTML
-  window.location.href = `mailto:seuemail@exemplo.com?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:contato@braseiropizzaria.com.br?subject=${subject}&body=${body}`;
 
   formNote.textContent = 'Abrindo seu cliente de e-mail...';
   form.reset();

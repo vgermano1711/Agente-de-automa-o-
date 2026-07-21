@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ANTERO — Estúdio Criativo</title>
-<meta name="description" content="Site estático sem banco de dados, pronto para você editar manualmente.">
+<title>Braseiro — Pizzaria de Bairro</title>
+<meta name="description" content="Site estático de pizzaria, sem banco de dados — o banco fica separado, na pasta /database, pra praticar.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -23,15 +23,15 @@
 
   <header class="header" id="header">
     <div class="header__inner">
-      <!-- TROQUE AQUI: seu nome / marca -->
-      <a href="#topo" class="logo">Antero<span class="logo__dot">.</span></a>
+      <!-- TROQUE AQUI: nome da pizzaria -->
+      <a href="#topo" class="logo">Braseiro<span class="logo__dot">.</span></a>
 
       <nav class="nav" id="nav">
         <a href="#sobre" class="nav__link">Sobre</a>
-        <a href="#servicos" class="nav__link">Serviços</a>
-        <a href="#projetos" class="nav__link">Projetos</a>
+        <a href="#cardapio" class="nav__link">Cardápio</a>
+        <a href="#pizzas" class="nav__link">Mais pedidas</a>
         <a href="#depoimentos" class="nav__link">Depoimentos</a>
-        <a href="#contato" class="nav__link nav__link--cta">Fale comigo</a>
+        <a href="#contato" class="nav__link nav__link--cta">Fazer pedido</a>
       </nav>
 
       <button class="burger" id="burger" aria-label="Abrir menu" aria-expanded="false">
@@ -49,25 +49,25 @@
         <span class="blob blob--b"></span>
       </div>
 
-      <p class="hero__eyebrow reveal">Disponível para novos projetos — 2026</p>
+      <p class="hero__eyebrow reveal">Aberto todos os dias — delivery e balcão</p>
 
       <h1 class="hero__title">
-        <span class="reveal-word">Ideias</span>
-        <span class="reveal-word">que</span>
-        <span class="reveal-word">viram</span>
-        <span class="reveal-word hero__title--italic">produto.</span>
+        <span class="reveal-word">Pizza</span>
+        <span class="reveal-word">feita</span>
+        <span class="reveal-word">como</span>
+        <span class="reveal-word hero__title--italic">antes.</span>
       </h1>
 
       <!-- TROQUE AQUI: sua frase de efeito -->
       <p class="hero__subtitle reveal">
-        Um espaço para mostrar seu trabalho, seus serviços ou seu projeto —
-        sem uma linha de backend, sem banco de dados. Só HTML, CSS e JS puros,
-        prontos pra você preencher do seu jeito.
+        Massa de fermentação natural descansando 48 horas, forno a lenha e
+        ingredientes frescos comprados no mesmo dia. Peça pelo site ou venha
+        buscar — sem enrolação.
       </p>
 
       <div class="hero__actions reveal">
-        <a href="#projetos" class="btn btn--primary magnetic">Ver projetos</a>
-        <a href="#contato" class="btn btn--ghost magnetic">Fale comigo →</a>
+        <a href="#pizzas" class="btn btn--primary magnetic">Ver cardápio</a>
+        <a href="#contato" class="btn btn--ghost magnetic">Fazer pedido →</a>
       </div>
 
       <a href="#sobre" class="scroll-cue" aria-label="Rolar para baixo">
@@ -78,12 +78,12 @@
     <!-- ================= MARQUEE ================= -->
     <div class="marquee" aria-hidden="true">
       <div class="marquee__track">
-        <span>DESIGN&nbsp;</span><span>·</span><span>&nbsp;DESENVOLVIMENTO&nbsp;</span><span>·</span>
-        <span>&nbsp;ESTRATÉGIA&nbsp;</span><span>·</span><span>&nbsp;SEM BANCO DE DADOS&nbsp;</span><span>·</span>
-        <span>&nbsp;100% ESTÁTICO&nbsp;</span><span>·</span>
-        <span>DESIGN&nbsp;</span><span>·</span><span>&nbsp;DESENVOLVIMENTO&nbsp;</span><span>·</span>
-        <span>&nbsp;ESTRATÉGIA&nbsp;</span><span>·</span><span>&nbsp;SEM BANCO DE DADOS&nbsp;</span><span>·</span>
-        <span>&nbsp;100% ESTÁTICO&nbsp;</span><span>·</span>
+        <span>FORNO A LENHA&nbsp;</span><span>·</span><span>&nbsp;MASSA DE 48H&nbsp;</span><span>·</span>
+        <span>&nbsp;ENTREGA NO BAIRRO&nbsp;</span><span>·</span><span>&nbsp;INGREDIENTES FRESCOS&nbsp;</span><span>·</span>
+        <span>&nbsp;FEITA NA HORA&nbsp;</span><span>·</span>
+        <span>FORNO A LENHA&nbsp;</span><span>·</span><span>&nbsp;MASSA DE 48H&nbsp;</span><span>·</span>
+        <span>&nbsp;ENTREGA NO BAIRRO&nbsp;</span><span>·</span><span>&nbsp;INGREDIENTES FRESCOS&nbsp;</span><span>·</span>
+        <span>&nbsp;FEITA NA HORA&nbsp;</span><span>·</span>
       </div>
     </div>
 
@@ -96,104 +96,104 @@
         </h2>
 
         <div class="about__content">
-          <!-- TROQUE AQUI: seu texto de apresentação -->
+          <!-- TROQUE AQUI: a história da sua pizzaria -->
           <p class="about__lead reveal">
-            Eu sou <strong>[seu nome]</strong>. Trabalho com [sua área — ex.: design,
-            desenvolvimento, fotografia, consultoria] e construí este site pra
-            reunir meus projetos e facilitar o contato — sem depender de nenhum
-            banco de dados ou servidor, só arquivos estáticos que qualquer
-            hospedagem gratuita aceita.
+            A <strong>Braseiro</strong> nasceu em [ano de fundação], no bairro
+            [seu bairro], com um forno a lenha construído à mão e uma receita
+            de massa que não mudou desde então. Hoje entregamos pra região
+            inteira, mas cada pizza ainda sai do mesmo forno, feita por quem
+            começou tudo isso.
           </p>
 
           <div class="stats reveal">
             <div class="stat">
-              <span class="stat__num" data-count="42">0</span>
-              <span class="stat__label">Projetos entregues</span>
+              <span class="stat__num" data-count="12">0</span>
+              <span class="stat__label">Anos de forno a lenha</span>
             </div>
             <div class="stat">
               <span class="stat__num" data-count="18">0</span>
-              <span class="stat__label">Clientes atendidos</span>
+              <span class="stat__label">Sabores no cardápio</span>
             </div>
             <div class="stat">
-              <span class="stat__num" data-count="5">0</span>
-              <span class="stat__label">Anos de estrada</span>
+              <span class="stat__num" data-count="48">0</span>
+              <span class="stat__label">Horas de fermentação</span>
             </div>
             <div class="stat">
-              <span class="stat__num" data-count="100">0</span>
-              <span class="stat__label">% estático, sem BD</span>
+              <span class="stat__num" data-count="7">0</span>
+              <span class="stat__label">Bairros atendidos</span>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ================= SERVIÇOS ================= -->
-    <section class="services" id="servicos">
+    <!-- ================= CARDÁPIO ================= -->
+    <section class="services" id="cardapio">
       <h2 class="section-title reveal">
         <span class="section-title__num">02</span>
-        O que eu faço
+        Cardápio
       </h2>
 
-      <!-- TROQUE AQUI: seus serviços/produtos. Duplique o .service-card à vontade -->
+      <!-- TROQUE AQUI: as categorias e sabores do seu cardápio -->
       <div class="services__grid">
         <article class="service-card reveal">
           <span class="service-card__index">01</span>
-          <h3>Identidade visual</h3>
-          <p>Marca, paleta e tipografia com personalidade — nada de template genérico.</p>
+          <h3>Tradicionais</h3>
+          <p>Marguerita, calabresa, mussarela e portuguesa — o clássico que nunca falha.</p>
         </article>
         <article class="service-card reveal">
           <span class="service-card__index">02</span>
-          <h3>Sites estáticos</h3>
-          <p>Páginas rápidas, sem banco de dados, fáceis de hospedar e de manter.</p>
+          <h3>Especiais da casa</h3>
+          <p>Combinações autorais, criadas no forno e testadas pelos clientes fiéis.</p>
         </article>
         <article class="service-card reveal">
           <span class="service-card__index">03</span>
-          <h3>Conteúdo &amp; texto</h3>
-          <p>Copy direta, sem clichê de IA, pensada pra quem vai realmente ler.</p>
+          <h3>Doces</h3>
+          <p>Chocolate, banana com canela e prestígio — pra fechar a noite com chave de ouro.</p>
         </article>
         <article class="service-card reveal">
           <span class="service-card__index">04</span>
-          <h3>Consultoria</h3>
-          <p>Uma conversa honesta sobre o que faz sentido construir primeiro.</p>
+          <h3>Bebidas</h3>
+          <p>Refrigerantes, sucos naturais e cerveja gelada pra acompanhar.</p>
         </article>
       </div>
     </section>
 
-    <!-- ================= PROJETOS ================= -->
-    <section class="portfolio" id="projetos">
+    <!-- ================= MAIS PEDIDAS ================= -->
+    <section class="portfolio" id="pizzas">
       <h2 class="section-title reveal">
         <span class="section-title__num">03</span>
-        Projetos selecionados
+        Mais pedidas
       </h2>
 
-      <!-- TROQUE AQUI: seus projetos. Cada .project-card é independente -->
+      <!-- TROQUE AQUI: suas pizzas em destaque. Troque o background dos .project-card__media por foto real quando tiver -->
       <div class="portfolio__grid">
         <article class="project-card reveal" data-tilt>
           <div class="project-card__media project-card__media--a"></div>
           <div class="project-card__info">
-            <h3>Projeto Um</h3>
-            <p>Branding &amp; site</p>
+            <h3>Marguerita</h3>
+            <p>Molho, mussarela e manjericão fresco</p>
           </div>
         </article>
         <article class="project-card reveal" data-tilt>
           <div class="project-card__media project-card__media--b"></div>
           <div class="project-card__info">
-            <h3>Projeto Dois</h3>
-            <p>Landing page</p>
+            <h3>Calabresa</h3>
+            <p>Calabresa fatiada, cebola e azeitona</p>
           </div>
         </article>
         <article class="project-card reveal" data-tilt>
           <div class="project-card__media project-card__media--c"></div>
           <div class="project-card__info">
-            <h3>Projeto Três</h3>
-            <p>Identidade visual</p>
+            <h3>Quatro queijos</h3>
+            <p>Mussarela, provolone, gorgonzola e parmesão</p>
           </div>
         </article>
         <article class="project-card reveal" data-tilt>
           <div class="project-card__media project-card__media--d"></div>
           <div class="project-card__info">
-            <h3>Projeto Quatro</h3>
-            <p>Aplicativo</p>
+            <h3>Chocolate</h3>
+            <p>Chocolate ao leite derretido na massa quente</p>
           </div>
         </article>
       </div>
@@ -203,26 +203,26 @@
     <section class="testimonials" id="depoimentos">
       <h2 class="section-title reveal">
         <span class="section-title__num">04</span>
-        Quem já trabalhou comigo
+        Quem já pediu
       </h2>
 
-      <!-- TROQUE AQUI: depoimentos reais. Adicione/remova .testimonial livremente -->
+      <!-- TROQUE AQUI: depoimentos reais de clientes. Adicione/remova .testimonial livremente -->
       <div class="testimonial-slider reveal">
         <div class="testimonial-track" id="testimonialTrack">
           <blockquote class="testimonial">
-            <p>“Entregou exatamente o que a gente precisava, no prazo e sem
-            enrolação. Recomendo de olhos fechados.”</p>
-            <footer>— Nome do Cliente, Empresa X</footer>
+            <p>“Melhor pizza do bairro, sem dúvida. A massa é diferente de
+            tudo que já provei por aqui.”</p>
+            <footer>— Nome do Cliente, Bairro X</footer>
           </blockquote>
           <blockquote class="testimonial">
-            <p>“O site ficou muito mais rápido e simples de manter do que o
-            anterior. Nenhuma dor de cabeça com banco de dados.”</p>
-            <footer>— Nome do Cliente, Empresa Y</footer>
+            <p>“Entrega rápida e a pizza chega quentinha. Já virou pedido
+            de toda sexta-feira aqui em casa.”</p>
+            <footer>— Nome do Cliente, Bairro Y</footer>
           </blockquote>
           <blockquote class="testimonial">
-            <p>“Profissional, direto e com um olhar de design que fez toda
-            diferença no resultado final.”</p>
-            <footer>— Nome do Cliente, Empresa Z</footer>
+            <p>“Atendimento gente boa e cardápio com opção pra todo mundo,
+            até pra quem não gosta de pizza tradicional.”</p>
+            <footer>— Nome do Cliente, Bairro Z</footer>
           </blockquote>
         </div>
         <div class="testimonial-controls">
@@ -239,26 +239,28 @@
         <div class="contact__intro reveal">
           <h2 class="section-title">
             <span class="section-title__num">05</span>
-            Vamos conversar
+            Faça seu pedido
           </h2>
-          <!-- TROQUE AQUI: seu contato -->
-          <p>Me manda uma mensagem — o formulário abre seu e-mail já preenchido,
-          sem passar por nenhum servidor.</p>
-          <a class="contact__email" href="mailto:seuemail@exemplo.com">seuemail@exemplo.com</a>
+          <!-- TROQUE AQUI: seu contato e endereço -->
+          <p>Preenche seus dados e o pedido — o formulário abre seu WhatsApp
+          já com tudo escrito, sem passar por nenhum servidor. (No site real
+          com banco de dados, é esse formulário que viraria um cadastro de
+          <strong>pessoa</strong>, <strong>endereço</strong> e <strong>pedido</strong>.)</p>
+          <a class="contact__email" href="mailto:contato@braseiropizzaria.com.br">contato@braseiropizzaria.com.br</a>
 
           <div class="socials">
             <a href="#" target="_blank" rel="noopener">Instagram</a>
-            <a href="#" target="_blank" rel="noopener">LinkedIn</a>
-            <a href="#" target="_blank" rel="noopener">GitHub</a>
+            <a href="#" target="_blank" rel="noopener">WhatsApp</a>
+            <a href="#" target="_blank" rel="noopener">iFood</a>
           </div>
         </div>
 
         <!--
           Formulário 100% front-end: usa mailto:, então não precisa de
-          servidor nem banco de dados. Se um dia você quiser receber as
-          mensagens direto numa caixa de entrada sem escrever backend,
-          troque a action por um serviço tipo Formspree/Web3Forms — isso
-          é opcional e fica por sua conta integrar depois.
+          servidor nem banco de dados. Os campos abaixo (nome, telefone,
+          endereço, pizza) são de propósito os mesmos que viram tabelas no
+          banco de dados em /database — é só pra deixar a ligação clara
+          entre o que a pessoa digita aqui e o que se guarda lá.
         -->
         <form class="contact-form reveal" id="contactForm">
           <div class="form-field">
@@ -266,14 +268,18 @@
             <label for="name">Seu nome</label>
           </div>
           <div class="form-field">
-            <input type="email" id="email" name="email" required placeholder=" ">
-            <label for="email">Seu e-mail</label>
+            <input type="tel" id="phone" name="phone" required placeholder=" ">
+            <label for="phone">Telefone / WhatsApp</label>
           </div>
           <div class="form-field">
-            <textarea id="message" name="message" rows="4" required placeholder=" "></textarea>
-            <label for="message">Mensagem</label>
+            <input type="text" id="address" name="address" required placeholder=" ">
+            <label for="address">Endereço de entrega</label>
           </div>
-          <button type="submit" class="btn btn--primary magnetic">Enviar mensagem</button>
+          <div class="form-field">
+            <textarea id="message" name="message" rows="3" required placeholder=" "></textarea>
+            <label for="message">O que vai pedir?</label>
+          </div>
+          <button type="submit" class="btn btn--primary magnetic">Enviar pedido</button>
           <p class="form-note" id="formNote" role="status"></p>
         </form>
       </div>
@@ -283,8 +289,8 @@
 
   <footer class="footer">
     <div class="footer__inner">
-      <a href="#topo" class="logo logo--footer">Antero<span class="logo__dot">.</span></a>
-      <p>© <span id="year"></span> — feito sem banco de dados, só arquivo estático.</p>
+      <a href="#topo" class="logo logo--footer">Braseiro<span class="logo__dot">.</span></a>
+      <p>© <span id="year"></span> Braseiro Pizzaria — site estático; o banco de dados vive à parte, em /database.</p>
       <a href="#topo" class="to-top">Voltar ao topo ↑</a>
     </div>
   </footer>
