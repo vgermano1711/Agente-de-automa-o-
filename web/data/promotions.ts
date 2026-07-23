@@ -6,7 +6,7 @@ import type { Promotion } from "@/types/content";
 export const promotions: Promotion[] = [
   {
     id: "promo-terca",
-    title: "Terça é dia de Braseiro",
+    title: "Terça é dia de Germano's",
     description: "Todas as pizzas tradicionais com 20% de desconto, só na terça-feira.",
     code: "TERCA20",
     discountLabel: "20% OFF",
@@ -17,7 +17,7 @@ export const promotions: Promotion[] = [
     id: "promo-combo",
     title: "Combo Casal",
     description: "2 pizzas médias + refrigerante 2L com preço especial pra dividir.",
-    code: "CASALBRASEIRO",
+    code: "CASALGERMANOS",
     discountLabel: "R$ 20 OFF",
     image: "/images/gallery-06.svg",
     endsAt: "2026-12-31T23:59:59-03:00",

@@ -3,18 +3,20 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal, StaggerGroup } from "@/components/ui/reveal";
 import { DifferentialCard } from "@/components/cards/differential-card";
 import type { Differential } from "@/types/content";
+import type { SiteSettings } from "@/types/site";
 
 interface DifferentialsProps {
   items: Differential[];
+  settings: SiteSettings;
 }
 
-export function Differentials({ items }: DifferentialsProps) {
+export function Differentials({ items, settings }: DifferentialsProps) {
   return (
     <section className="bg-charcoal py-24 md:py-32">
       <Container>
         <Reveal>
           <SectionHeading
-            eyebrow="Por que a Braseiro"
+            eyebrow={`Por que a ${settings.shortName}`}
             title="Cada detalhe pensado antes de chegar até você."
             description="Não é sorte — é processo. Cinco pilares que sustentam cada pizza que sai do nosso forno."
             tone="dark"

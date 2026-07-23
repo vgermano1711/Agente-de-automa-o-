@@ -55,7 +55,7 @@ export default async function Home() {
       <main>
         <Hero settings={settings} />
         <About settings={settings} />
-        <Differentials items={differentials} />
+        <Differentials items={differentials} settings={settings} />
         <MenuSection items={menuItems} categories={menuCategories} />
         <Promotions promotions={promotions} />
         <GallerySection images={galleryImages} />

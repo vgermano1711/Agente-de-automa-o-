@@ -17,7 +17,7 @@ const manrope = Manrope({
 });
 
 // TROQUE AQUI quando o domínio definitivo estiver no ar.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://braseiropizzaria.com.br";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://germanospizza.com.br";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -31,7 +31,7 @@ export function Hero({ settings }: HeroProps) {
       <motion.div className="absolute inset-0 scale-110" style={{ y: imageY }}>
         <Image
           src="/images/hero-bg.svg"
-          alt="Pizza artesanal recém-saída do forno à lenha da Braseiro"
+          alt={`Pizza artesanal recém-saída do forno à lenha da ${settings.shortName}`}
           fill
           priority
           className="object-cover"

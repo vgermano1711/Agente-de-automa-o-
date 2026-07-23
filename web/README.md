@@ -1,4 +1,4 @@
-# Braseiro Pizzaria — site institucional
+# Germano's Pizza — site institucional
 
 Site institucional completo para uma pizzaria premium, construído em
 Next.js (App Router) + TypeScript + Tailwind CSS. **Sem banco de dados,
@@ -38,18 +38,18 @@ npm run placeholders                 # regenera as imagens placeholder em /publi
 `/data`, tipado via `/types` e acessado através de `/lib` (a camada que
 vai virar chamadas de API no dia em que você tiver um backend):
 
-| Arquivo                  | O que controla                                                              |
-| ------------------------ | ---------------------------------------------------------------------------- |
-| `data/settings.ts`       | Nome, telefone, endereço, horários, redes sociais, estatísticas do "Sobre"    |
-| `data/pizzas.ts`         | Cardápio de pizzas (tradicionais, especiais, doces)                          |
-| `data/drinks.ts`         | Bebidas                                                                     |
-| `data/desserts.ts`       | Sobremesas (além das pizzas doces)                                          |
-| `data/differentials.ts` | Cards da seção "Diferenciais"                                               |
-| `data/how-it-works.ts`  | Passos do "Como funciona"                                                   |
-| `data/promotions.ts`    | Banner e cards de promoções (o countdown é só visual)                        |
-| `data/gallery.ts`       | Fotos da galeria (o campo `span` controla o tamanho no grid assimétrico)      |
-| `data/testimonials.ts`  | Depoimentos do carrossel                                                    |
-| `data/faq.ts`           | Perguntas frequentes                                                        |
+| Arquivo                 | O que controla                                                             |
+| ----------------------- | -------------------------------------------------------------------------- |
+| `data/settings.ts`      | Nome, telefone, endereço, horários, redes sociais, estatísticas do "Sobre" |
+| `data/pizzas.ts`        | Cardápio de pizzas (tradicionais, especiais, doces)                        |
+| `data/drinks.ts`        | Bebidas                                                                    |
+| `data/desserts.ts`      | Sobremesas (além das pizzas doces)                                         |
+| `data/differentials.ts` | Cards da seção "Diferenciais"                                              |
+| `data/how-it-works.ts`  | Passos do "Como funciona"                                                  |
+| `data/promotions.ts`    | Banner e cards de promoções (o countdown é só visual)                      |
+| `data/gallery.ts`       | Fotos da galeria (o campo `span` controla o tamanho no grid assimétrico)   |
+| `data/testimonials.ts`  | Depoimentos do carrossel                                                   |
+| `data/faq.ts`           | Perguntas frequentes                                                       |
 
 Basta editar os arrays desses arquivos — adicionar, remover ou reordenar
 itens já reflete automaticamente no site (cardápio, galeria e depoimentos

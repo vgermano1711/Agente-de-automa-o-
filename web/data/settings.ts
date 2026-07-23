@@ -3,8 +3,8 @@ import type { SiteSettings } from "@/types/site";
 // TROQUE AQUI — dados institucionais. Tudo que aparece no header, rodapé,
 // contato e schema.org (SEO) vem centralizado deste arquivo.
 export const siteSettings: SiteSettings = {
-  name: "Braseiro Pizzaria",
-  shortName: "Braseiro",
+  name: "Germano's Pizza",
+  shortName: "Germano's",
   tagline: "A pizza perfeita começa com ingredientes de verdade.",
   description:
     "Pizzaria artesanal com forno à lenha, massa de fermentação natural e ingredientes selecionados. Delivery e balcão na Vila Mariana, São Paulo.",
@@ -12,7 +12,7 @@ export const siteSettings: SiteSettings = {
   phone: "+5511987654321",
   phoneDisplay: "(11) 98765-4321",
   whatsapp: "5511987654321",
-  email: "contato@braseiropizzaria.com.br",
+  email: "contato@germanospizza.com.br",
   address: {
     street: "Rua Coronel Oscar Porto, 210",
     neighborhood: "Vila Mariana",

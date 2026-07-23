@@ -46,7 +46,7 @@ export function About({ settings }: AboutProps) {
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl shadow-2xl">
               <Image
                 src="/images/about.svg"
-                alt="Interior da pizzaria Braseiro, com o forno à lenha ao fundo"
+                alt={`Interior da pizzaria ${settings.shortName}, com o forno à lenha ao fundo`}
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"

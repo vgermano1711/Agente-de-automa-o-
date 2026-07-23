@@ -30,7 +30,7 @@ export const differentials: Differential[] = [
   {
     id: "atendimento-premium",
     title: "Atendimento premium",
-    description: "Time treinado pra te tratar como parte da família Braseiro.",
+    description: "Time treinado pra te tratar como parte da família Germano's.",
     icon: HeartHandshake,
   },
 ];
