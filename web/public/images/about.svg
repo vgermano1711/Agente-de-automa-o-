@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="1400" viewBox="0 0 1200 1400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustração da Braseiro Pizzaria">
+  <defs>
+    <linearGradient id="bg-aboutsvg" gradientTransform="rotate(145)">
+      <stop offset="0%" stop-color="#332F2C" />
+      <stop offset="100%" stop-color="#1C1B1A" />
+    </linearGradient>
+    <filter id="grain-aboutsvg">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="1400" fill="url(#bg-aboutsvg)" />
+  <g transform="translate(344, 470)" filter="url(#grain-aboutsvg)">
+    
+    <g transform="translate(0,0)">
+      <path d="M256 60 L452 400 A220 220 0 0 1 60 400 Z" fill="#6B0F1A" opacity="0.9"/>
+      <path d="M256 96 L424 388 A184 184 0 0 1 88 388 Z" fill="#E8B94D" opacity="0.95"/>
+      <circle cx="200" cy="240" r="20" fill="#2E5B3B" opacity="0.92" /><circle cx="300" cy="210" r="16" fill="#2E5B3B" opacity="0.92" /><circle cx="250" cy="300" r="18" fill="#3D0910" opacity="0.92" />
+      <path d="M256 60 L452 400 A220 220 0 0 1 60 400 Z" fill="none" stroke="#C9A227" stroke-width="14" opacity="0.85"/>
+    </g>
+  </g>
+</svg>

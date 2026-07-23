@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="900" viewBox="0 0 900 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustração da Braseiro Pizzaria">
+  <defs>
+    <linearGradient id="bg-desserttiramisusvg" gradientTransform="rotate(100)">
+      <stop offset="0%" stop-color="#3B2A1A" />
+      <stop offset="100%" stop-color="#1F160D" />
+    </linearGradient>
+    <filter id="grain-desserttiramisusvg">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg-desserttiramisusvg)" />
+  <g transform="translate(194, 220)" filter="url(#grain-desserttiramisusvg)">
+    
+    <g>
+      <circle cx="256" cy="230" r="200" fill="none" stroke="#C9A87A" stroke-width="10" opacity="0.35"/>
+      <circle cx="256" cy="230" r="150" fill="#C9A87A" opacity="0.85"/>
+      <path d="M256 120 a110 110 0 0 1 95 165" stroke="#FAF6EF" stroke-width="8" fill="none" opacity="0.4"/>
+    </g>
+  </g>
+</svg>
