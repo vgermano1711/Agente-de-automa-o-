@@ -76,8 +76,12 @@ export class WhatsAppConnection {
       authStrategy: new LocalAuth(authOpts),
       puppeteer: {
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-        protocolTimeout: 120000, // 2 min — evita "Page.navigate timed out" em máquinas lentas
-      },
+        // `protocolTimeout` existe em runtime (repassado ao puppeteer.launch()), mas os
+        // tipos que o whatsapp-web.js reexporta não o declaram nessa versão — cast local
+        // para preservar a proteção contra "Page.navigate timed out" em máquinas lentas.
+        protocolTimeout: 120000,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
     });
 
     this.client.on('qr', (qr: string) => {
