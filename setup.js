@@ -118,9 +118,10 @@ function writeEnv(vars) {
     `GOOGLE_CLIENT_SECRET=${vars.google_client_secret || ''}`,
     `GOOGLE_REFRESH_TOKEN=${vars.google_refresh_token || ''}`,
     '',
-    '# NETLIFY (deploy de landing pages)',
-    `NETLIFY_AUTH_TOKEN=${vars.netlify_token || ''}`,
-    `NETLIFY_SITE_PREFIX=demo-`,
+    '# SURGE.SH (deploy de landing pages — gratuito)',
+    `SURGE_LOGIN=${vars.surge_login || ''}`,
+    `SURGE_TOKEN=${vars.surge_token || ''}`,
+    `SURGE_PREFIX=sales-bot-`,
     '',
     '# PUSHOVER (notificações no celular)',
     `PUSHOVER_TOKEN=${vars.pushover_token || ''}`,
@@ -236,13 +237,19 @@ async function main() {
     print(yellow('  → Pulado — envio de email não funcionará'));
   }
 
-  // ── 5. Netlify ────────────────────────────────────────────────────────────
-  section('5. Netlify (deploy automático das landing pages)');
-  print(dim('  Obter em: app.netlify.com → User Settings → Applications → New access token'));
+  // ── 5. Surge.sh ───────────────────────────────────────────────────────────
+  section('5. Surge.sh (deploy automático das landing pages — GRATUITO)');
+  print(dim('  Crie uma conta grátis em surge.sh'));
+  print(dim('  Depois gere um token com: npx surge token'));
   print('');
-  const netlify_token = await ask('Cole seu NETLIFY_AUTH_TOKEN (Enter para pular):');
-  if (netlify_token) print(green('  ✓ Netlify configurado — landing pages farão deploy automático'));
-  else print(yellow('  → Pulado — LPs serão servidas localmente em localhost:3000'));
+  const surge_login = await ask('Seu email do Surge.sh (Enter para pular):');
+  let surge_token = '';
+  if (surge_login) {
+    surge_token = await ask('Token Surge (npx surge token):');
+    if (surge_token) print(green('  ✓ Surge.sh configurado — landing pages farão deploy automático'));
+  } else {
+    print(yellow('  → Pulado — LPs serão servidas localmente em localhost:3000'));
+  }
 
   // ── 6. Pushover ───────────────────────────────────────────────────────────
   section('6. Pushover (notificações no celular) — opcional');
@@ -273,7 +280,7 @@ async function main() {
   writeEnv({
     anthropic_key, places_key, gmail_user, gmail_pass,
     google_client_id: '', google_client_secret: '', google_refresh_token: '',
-    netlify_token, pushover_token, pushover_user, calendly_link,
+    surge_login, surge_token, pushover_token, pushover_user, calendly_link,
     owner_email, notificacoes: notif,
     whatsapp_provider, zapi_instance_id, zapi_token, zapi_client_token,
   });

@@ -1,16 +1,146 @@
 {
-  "cidades_alvo": ["São Paulo, SP", "Campinas, SP", "Curitiba, PR"],
-  "segmentos": [
-    "salão de beleza",
-    "barbearia",
-    "clínica odontológica",
-    "construtora",
-    "corretor de imóveis"
+  "cidades_alvo": [
+    "São Caetano do Sul, SP",
+    "Santo André, SP",
+    "São Bernardo do Campo, SP",
+    "São Paulo, SP",
+    "Guarulhos, SP",
+    "Osasco, SP",
+    "São José dos Campos, SP",
+    "Campinas, SP",
+    "Sorocaba, SP",
+    "Ribeirão Preto, SP"
   ],
-  "leads_por_dia": 5,
-  "horario_ciclo": "0 8 * * *",
+  "segmentos": [
+    "barbearia",
+    "salão de beleza",
+    "clínica de estética",
+    "manicure e pedicure",
+    "clínica odontológica",
+    "clínica médica",
+    "clínica de fisioterapia",
+    "psicólogo",
+    "nutricionista",
+    "escritório de advocacia",
+    "escritório de contabilidade",
+    "arquiteto",
+    "médico especialista",
+    "corretor de imóveis",
+    "imobiliária",
+    "construtora",
+    "escola de idiomas",
+    "escola de música",
+    "academia de musculação",
+    "pet shop",
+    "restaurante",
+    "pizzaria",
+    "lanchonete",
+    "studio de depilação",
+    "clínica de estética avançada",
+    "studio de tatuagem",
+    "personal trainer",
+    "clínica de psicologia",
+    "veterinário",
+    "auto escola",
+    "mecânica automotiva"
+  ],
+  "leads_por_dia": 100,
+  "max_envios_por_dia": 60,
+  "horario_envio_inicio": 9,
+  "horario_envio_fim": 18,
   "intervalo_agent7_minutos": 5,
   "canal_padrao": "whatsapp",
-  "netlify_site_prefix": "demo-",
-  "notificacoes_ativas": true
+  "surge_prefix": "sales-bot-",
+  "notificacoes_ativas": true,
+  "segmentos_upsell_automacao": {
+    "_comentario": "Segmentos elegíveis para oferta de automação após entrega do site. Valor = tipo de automação mais relevante para o segmento.",
+    "barbearia": "agendamento",
+    "salão de beleza": "agendamento",
+    "clínica de estética": "agendamento",
+    "manicure e pedicure": "agendamento",
+    "studio de depilação": "agendamento",
+    "studio de cílios": "agendamento",
+    "clínica odontológica": "agendamento",
+    "clínica médica": "agendamento",
+    "clínica de fisioterapia": "agendamento",
+    "psicólogo": "agendamento",
+    "nutricionista": "agendamento",
+    "clínica de psicologia": "agendamento",
+    "clínica de estética avançada": "agendamento",
+    "médico especialista": "agendamento",
+    "personal trainer": "agendamento",
+    "veterinário": "agendamento",
+    "auto escola": "agendamento",
+    "restaurante": "cardapio",
+    "pizzaria": "cardapio",
+    "lanchonete": "cardapio",
+    "academia de musculação": "reativacao",
+    "pet shop": "reativacao",
+    "escola de idiomas": "reativacao",
+    "escola de música": "reativacao",
+    "escritório de advocacia": "atendimento",
+    "escritório de contabilidade": "atendimento",
+    "arquiteto": "atendimento",
+    "corretor de imóveis": "atendimento",
+    "imobiliária": "atendimento",
+    "construtora": "atendimento",
+    "studio de tatuagem": "atendimento",
+    "mecânica automotiva": "atendimento"
+  },
+  "agenda_semanal": {
+    "1": {
+      "_comentario": "SEGUNDA — Automação: Beleza e Estética. Dor óbvia, demo convence na hora, conversão rápida.",
+      "segmentos": [
+        "barbearia",
+        "salão de beleza",
+        "clínica de estética",
+        "manicure e pedicure",
+        "studio de cílios"
+      ],
+      "horario": "0 8 * * 1"
+    },
+    "2": {
+      "_comentario": "TERÇA — Automação: Saúde. Clínicas perdem pacientes por falta de resposta rápida. Agendamento automático resolve.",
+      "segmentos": [
+        "clínica odontológica",
+        "clínica médica",
+        "clínica de fisioterapia",
+        "psicólogo",
+        "nutricionista"
+      ],
+      "horario": "0 8 * * 2"
+    },
+    "3": {
+      "_comentario": "QUARTA — Site: Profissionais Liberais. Credibilidade é tudo. Site premium = ticket alto. Profissionais mais receptivos no meio da semana.",
+      "segmentos": [
+        "escritório de advocacia",
+        "escritório de contabilidade",
+        "arquiteto",
+        "médico especialista"
+      ],
+      "horario": "0 9 * * 3"
+    },
+    "4": {
+      "_comentario": "QUINTA — Site: Negócios e Educação. Imobiliárias precisam de site para anunciar imóveis. Escolas precisam para captação de alunos.",
+      "segmentos": [
+        "corretor de imóveis",
+        "imobiliária",
+        "construtora",
+        "escola de idiomas",
+        "escola de música"
+      ],
+      "horario": "0 9 * * 4"
+    },
+    "5": {
+      "_comentario": "SEXTA — Automação: Recorrência. Academia e pet shop reativam clientes sumidos. Restaurantes ganham com cardápio digital.",
+      "segmentos": [
+        "academia de musculação",
+        "pet shop",
+        "restaurante",
+        "pizzaria",
+        "lanchonete"
+      ],
+      "horario": "0 10 * * 5"
+    }
+  }
 }

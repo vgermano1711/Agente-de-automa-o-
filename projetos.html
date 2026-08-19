@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projetos — Painel de Gestão</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --card:    #21263a;
+      --border:  #2e3348;
+      --text:    #e2e8f0;
+      --muted:   #94a3b8;
+      --accent:  #6366f1;
+      --green:   #22c55e;
+      --yellow:  #f59e0b;
+      --red:     #ef4444;
+      --blue:    #38bdf8;
+      --purple:  #a855f7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 700; }
+    .nav-links { margin-left: auto; display: flex; gap: 12px; }
+    .nav-links a { color: var(--muted); font-size: .82rem; text-decoration: none; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); transition: .15s; }
+    .nav-links a:hover { color: var(--text); border-color: var(--accent); }
+
+    .toolbar { display: flex; align-items: center; gap: 10px; padding: 18px 28px; flex-wrap: wrap; }
+    .filter-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 6px 16px; border-radius: 20px; font-size: .8rem; cursor: pointer; transition: .15s; }
+    .filter-btn.active, .filter-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+    #search { margin-left: auto; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 7px 14px; border-radius: 8px; font-size: .85rem; width: 220px; }
+    #search:focus { outline: none; border-color: var(--accent); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 0 28px 32px; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color .2s; }
+    .card:hover { border-color: var(--accent); }
+    .card-header { display: flex; align-items: flex-start; gap: 10px; padding: 16px; border-bottom: 1px solid var(--border); }
+    .card-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 800; flex-shrink: 0; background: var(--accent); }
+    .card-avatar.auto { background: var(--purple); }
+    .card-title { font-weight: 700; font-size: .95rem; }
+    .card-phone { color: var(--muted); font-size: .78rem; margin-top: 2px; }
+    .card-badges { margin-left: auto; display: flex; gap: 6px; flex-direction: column; align-items: flex-end; }
+
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: .7rem; font-weight: 700; letter-spacing: .04em; }
+    .badge-site   { background: rgba(56,189,248,.15);  color: var(--blue);   border: 1px solid rgba(56,189,248,.3); }
+    .badge-auto   { background: rgba(168,85,247,.15);  color: var(--purple); border: 1px solid rgba(168,85,247,.3); }
+    .s-aguardando { background: rgba(245,158,11,.12); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+    .s-onboarding { background: rgba(99,102,241,.12); color: var(--accent); border: 1px solid rgba(99,102,241,.3); }
+    .s-em_producao{ background: rgba(56,189,248,.12); color: var(--blue);   border: 1px solid rgba(56,189,248,.3); }
+    .s-entregue   { background: rgba(34,197,94,.12);  color: var(--green);  border: 1px solid rgba(34,197,94,.3); }
+    .s-ativo      { background: rgba(34,197,94,.2);   color: var(--green);  border: 1px solid rgba(34,197,94,.5); }
+
+    .card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .info-row { display: flex; align-items: center; justify-content: space-between; font-size: .82rem; }
+    .info-label { color: var(--muted); }
+    .info-value { font-weight: 500; }
+    .info-value.green  { color: var(--green); }
+    .info-value.yellow { color: var(--yellow); }
+
+    .card-actions { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { flex: 1; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: .78rem; font-weight: 600; cursor: pointer; transition: .15s; text-align: center; text-decoration: none; min-width: 90px; display: inline-flex; align-items: center; justify-content: center; }
+    .btn:hover         { background: var(--accent); border-color: var(--accent); }
+    .btn.success:hover { background: var(--green);  border-color: var(--green); color: #000; }
+
+    .empty { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 60px 0; font-size: .95rem; }
+
+    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--green); color: #000; padding: 10px 20px; border-radius: 8px; font-size: .85rem; font-weight: 600; opacity: 0; transition: opacity .25s; pointer-events: none; }
+    #toast.show { opacity: 1; }
+
+    #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; }
+    #modal-overlay.show { display: flex; }
+    #modal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; width: min(420px, 90vw); }
+    #modal h2 { font-size: 1rem; margin-bottom: 18px; }
+    #modal label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: 5px; }
+    #modal input { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: .9rem; margin-bottom: 16px; }
+    #modal input:focus { outline: none; border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-actions button { padding: 9px 22px; border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; }
+    #modal-cancel  { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+    #modal-confirm { background: var(--green); color: #000; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Projetos</h1>
+  <span id="subtitle" style="color:var(--muted);font-size:.85rem">carregando...</span>
+  <nav class="nav-links">
+    <a href="/chat">Chat</a>
+    <a href="/analytics">Analytics</a>
+  </nav>
+</header>
+
+<div class="toolbar">
+  <button class="filter-btn active" data-filter="todos">Todos</button>
+  <button class="filter-btn" data-filter="aguardando_confirmacao">Aguard. pag.</button>
+  <button class="filter-btn" data-filter="onboarding">Onboarding</button>
+  <button class="filter-btn" data-filter="em_producao">Em produção</button>
+  <button class="filter-btn" data-filter="entregue">Entregue</button>
+  <button class="filter-btn" data-filter="ativo">Ativo (auto)</button>
+  <input id="search" type="text" placeholder="Buscar negócio..." />
+</div>
+
+<div class="grid" id="grid">
+  <div class="empty">Carregando projetos...</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title">Confirmar</h2>
+    <label id="modal-label">URL</label>
+    <input id="modal-input" type="text" />
+    <div class="modal-actions">
+      <button id="modal-cancel">Cancelar</button>
+      <button id="modal-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let projetos = [];
+  let filtroAtual = 'todos';
+  let buscaAtual = '';
+  let modalAction = null;
+
+  const STATUS_LABEL = {
+    aguardando_confirmacao: 'Aguard. pag.',
+    onboarding:  'Onboarding',
+    em_producao: 'Em produção',
+    entregue:    'Entregue',
+    ativo:       'Ativo',
+  };
+  const STATUS_CLASS = {
+    aguardando_confirmacao: 's-aguardando',
+    onboarding:  's-onboarding',
+    em_producao: 's-em_producao',
+    entregue:    's-entregue',
+    ativo:       's-ativo',
+  };
+  const PLANO_SITE = { 1: 'R$597', 2: 'R$897', 3: 'R$797 + R$149/mês' };
+  const PLANO_AUTO = { 1: 'R$297/mês', 2: 'R$497/mês', 3: 'R$697/mês' };
+
+  function diasDesde(iso) {
+    if (!iso) return '—';
+    const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    return d === 0 ? 'hoje' : d + 'd';
+  }
+
+  function renderCard(p) {
+    const isAuto = p.tipo_produto === 'automacao';
+    const inicial = (p.nome_negocio || '?')[0].toUpperCase();
+    const planoMap = isAuto ? PLANO_AUTO : PLANO_SITE;
+    const planoLabel = planoMap[p.opcao] || (isAuto ? `R$${p.mensalidade || 297}/mês` : '—');
+    const refDate = isAuto
+      ? (p.ativo_desde || p.onboarding_completo_em || p.comprovante_em)
+      : (p.entregue_em || p.onboarding_completo_em || p.comprovante_em);
+
+    let acoes = '';
+    if (p.status === 'aguardando_confirmacao') {
+      acoes += `<button class="btn success" onclick="confirmarPagamento('${p.id}')">Confirmar pag.</button>`;
+    }
+    if (p.status === 'em_producao') {
+      if (isAuto) {
+        const tokenQs = p.ativacao_token ? `?t=${encodeURIComponent(p.ativacao_token)}` : '';
+        acoes += `<a class="btn success" href="/ativacao/${p.slug}${tokenQs}" target="_blank">Abrir painel de ativação</a>`;
+      } else {
+        acoes += `<button class="btn success" onclick="marcarEntregue('${p.id}')">Marcar entregue</button>`;
+      }
+    }
+    if (p.status === 'entregue' && !isAuto && !p.segunda_parcela_paga) {
+      acoes += `<button class="btn" onclick="confirmarSegundaParcela('${p.id}')">2ª parcela recebida</button>`;
+    }
+    if (p.status === 'ativo' && isAuto) {
+      acoes += `<button class="btn" onclick="confirmarCobrancaAutomacao('${p.id}')">Mensalidade recebida</button>`;
+    }
+    if (p.entrega_url) {
+      acoes += `<a class="btn" href="${p.entrega_url}" target="_blank">Ver site</a>`;
+    }
+
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-avatar ${isAuto ? 'auto' : ''}">${inicial}</div>
+          <div>
+            <div class="card-title">${p.nome_negocio}</div>
+            <div class="card-phone">${p.phone || '—'}</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge ${isAuto ? 'badge-auto' : 'badge-site'}">${isAuto ? '🤖 Auto' : '🌐 Site'}</span>
+            <span class="badge ${STATUS_CLASS[p.status] || ''}">${STATUS_LABEL[p.status] || p.status}</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Plano</span>
+            <span class="info-value">${planoLabel}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Comprovante</span>
+            <span class="info-value">${p.comprovante_em ? new Date(p.comprovante_em).toLocaleDateString('pt-BR') : '—'}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">${isAuto ? (p.ativo_desde ? 'Ativo há' : 'Em config.') : (p.entregue_em ? 'Entregue há' : 'Em andamento')}</span>
+            <span class="info-value green">${diasDesde(refDate)}</span>
+          </div>
+          ${isAuto && p.ultimo_cobranca_mensal ? `
+          <div class="info-row">
+            <span class="info-label">Última cobrança</span>
+            <span class="info-value">${new Date(p.ultimo_cobranca_mensal).toLocaleDateString('pt-BR')}</span>
+          </div>` : ''}
+          ${!isAuto && p.segunda_parcela_paga ? `
+          <div class="info-row">
+            <span class="info-label">2ª parcela</span>
+            <span class="info-value green">✓ Recebida</span>
+          </div>` : ''}
+        </div>
+        ${acoes ? `<div class="card-actions">${acoes}</div>` : ''}
+      </div>`;
+  }
+
+  function renderGrid() {
+    const filtrados = projetos.filter(p => {
+      const statusOk = filtroAtual === 'todos' || p.status === filtroAtual;
+      const buscaOk  = !buscaAtual || (p.nome_negocio || '').toLowerCase().includes(buscaAtual);
+      return statusOk && buscaOk;
+    });
+    const grid = document.getElementById('grid');
+    grid.innerHTML = filtrados.length
+      ? filtrados.map(renderCard).join('')
+      : '<div class="empty">Nenhum projeto encontrado</div>';
+    const total = projetos.length;
+    const ativos = projetos.filter(p => p.status === 'ativo').length;
+    document.getElementById('subtitle').textContent =
+      `${total} projeto(s)${ativos ? ` · ${ativos} bot(s) ativo(s)` : ''}`;
+  }
+
+  async function load() {
+    try {
+      projetos = await fetch('/api/projetos').then(r => r.json());
+      renderGrid();
+    } catch {
+      document.getElementById('grid').innerHTML = '<div class="empty">Erro ao carregar projetos</div>';
+    }
+  }
+
+  function toast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = error ? 'var(--red)' : 'var(--green)';
+    t.style.color = error ? '#fff' : '#000';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  async function patch(id, body) {
+    const r = await fetch(`/api/projetos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error('Erro na API');
+    return r.json();
+  }
+
+  async function confirmarPagamento(id) {
+    try {
+      await patch(id, { status: 'onboarding' });
+      toast('Pagamento confirmado!');
+      load();
+    } catch { toast('Erro ao confirmar', true); }
+  }
+
+  function marcarEntregue(id) {
+    document.getElementById('modal-title').textContent = 'Marcar site como entregue';
+    document.getElementById('modal-label').textContent = 'URL do site entregue (opcional)';
+    document.getElementById('modal-input').value = '';
+    document.getElementById('modal-input').placeholder = 'https://...';
+    modalAction = async () => {
+      const url = document.getElementById('modal-input').value.trim();
+      await patch(id, { status: 'entregue', entregue_em: new Date().toISOString(), ...(url ? { entrega_url: url } : {}) });
+      toast('Site marcado como entregue!');
+      load();
+    };
+    document.getElementById('modal-overlay').classList.add('show');
+  }
+
+  async function confirmarSegundaParcela(id) {
+    try {
+      await fetch(`/api/projetos/${id}/segunda-parcela`, { method: 'PATCH' });
+      toast('Segunda parcela confirmada!');
+      load();
+    } catch { toast('Erro ao confirmar', true); }
+  }
+
+  async function confirmarCobrancaAutomacao(id) {
+    try {
+      const r = await fetch(`/api/projetos/${id}/cobranca-automacao/pagar`, { method: 'PATCH' });
+      const data = await r.json();
+      toast(data.ja_estava_pago ? 'Essa mensalidade já estava marcada como paga.' : 'Mensalidade confirmada — recibo gerado!');
+      load();
+    } catch { toast('Erro ao confirmar', true); }
+  }
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filtroAtual = btn.dataset.filter;
+      renderGrid();
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', e => {
+    buscaAtual = e.target.value.toLowerCase();
+    renderGrid();
+  });
+
+  document.getElementById('modal-cancel').addEventListener('click', () => {
+    document.getElementById('modal-overlay').classList.remove('show');
+    modalAction = null;
+  });
+
+  document.getElementById('modal-confirm').addEventListener('click', async () => {
+    if (!modalAction) return;
+    try {
+      await modalAction();
+      document.getElementById('modal-overlay').classList.remove('show');
+    } catch { toast('Erro ao executar ação', true); }
+  });
+
+  load();
+  setInterval(load, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp — Vincular conta</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh;
+      background: #111b21; font-family: 'Segoe UI', system-ui, sans-serif; color: #e9edef;
+      padding: 24px;
+    }
+    .card {
+      background: #202c33; border-radius: 20px; padding: 36px 40px;
+      display: flex; flex-direction: column; align-items: center; gap: 22px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      max-width: 440px; width: 100%;
+    }
+    h1 { font-size: 1.35rem; color: #00a884; text-align: center; }
+    .subtitle { font-size: 0.9rem; color: #8696a0; text-align: center; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 0; border-radius: 10px; overflow: hidden;
+      border: 1px solid #2a3942; width: 100%;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px; border: none; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; transition: background .2s;
+      background: #2a3942; color: #8696a0;
+    }
+    .tab-btn.active { background: #00a884; color: #fff; }
+
+    /* ── QR Panel ── */
+    #panel-qr { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; }
+    #panel-phone { display: none; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+
+    .qr-wrap {
+      width: 260px; height: 260px; border-radius: 14px;
+      background: #fff; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    canvas { border-radius: 10px; }
+
+    .qr-status {
+      font-size: 0.85rem; color: #8696a0; text-align: center; min-height: 20px;
+    }
+    .qr-status.ok    { color: #00a884; }
+    .qr-status.error { color: #ef4444; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #2a3942; border-top-color: #00a884;
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .connected-icon { font-size: 4rem; }
+
+    /* ── Steps ── */
+    ol.steps { list-style: none; display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 0 4px; }
+    ol.steps li { font-size: 0.88rem; color: #8696a0; display: flex; gap: 10px; align-items: flex-start; }
+    ol.steps li .num { color: #00a884; font-weight: 700; flex-shrink: 0; min-width: 18px; }
+    ol.steps li span { color: #e9edef; }
+
+    /* ── Phone pairing ── */
+    .phone-input-wrap { width: 100%; }
+    .phone-label { font-size: 0.82rem; color: #8696a0; margin-bottom: 8px; display: block; }
+    .phone-input {
+      width: 100%; padding: 12px 14px;
+      background: #2a3942; border: 1px solid #3b4a54; border-radius: 10px;
+      color: #e9edef; font-size: 1rem; outline: none; transition: border .2s;
+    }
+    .phone-input:focus { border-color: #00a884; }
+    .phone-input::placeholder { color: #8696a0; }
+    .btn-pair {
+      width: 100%; padding: 13px;
+      background: #00a884; border: none; border-radius: 10px;
+      color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-pair:hover { opacity: .88; }
+    .btn-pair:disabled { opacity: .45; cursor: not-allowed; }
+
+    .pairing-code-box {
+      width: 100%; background: #2a3942; border-radius: 12px;
+      padding: 20px; text-align: center; display: none; flex-direction: column; gap: 8px;
+    }
+    .pairing-code-box.show { display: flex; }
+    .code-label { font-size: 0.8rem; color: #8696a0; }
+    .code-value { font-size: 2.2rem; font-weight: 700; color: #00a884; letter-spacing: .18em; }
+    .code-hint { font-size: 0.8rem; color: #8696a0; }
+
+    /* ── Tip ── */
+    .tip { font-size: 0.75rem; color: #8696a0; text-align: center; }
+
+    /* ── Error / Zapi banner ── */
+    .banner {
+      width: 100%; padding: 12px 16px; border-radius: 10px;
+      font-size: 0.85rem; text-align: center;
+    }
+    .banner.info    { background: #1d2d35; border: 1px solid #3b4a54; color: #8696a0; }
+    .banner.success { background: #12352a; border: 1px solid #00a88444; color: #00a884; }
+    .banner.error   { background: #3b1212; border: 1px solid #ef444444; color: #ef4444; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>📱 Vincular WhatsApp ao sistema</h1>
+  <div class="subtitle" id="subtitle">Escolha como quer conectar sua conta</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('qr',this)">📷 QR Code</button>
+    <button class="tab-btn"        onclick="switchTab('phone',this)">📞 Número</button>
+  </div>
+
+  <!-- ── QR Panel ── -->
+  <div id="panel-qr">
+    <div class="qr-wrap" id="qr-wrap">
+      <div class="spinner" id="qr-spinner"></div>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+      <div id="qr-connected" style="display:none;flex-direction:column;align-items:center;gap:8px">
+        <div class="connected-icon">✅</div>
+        <span style="color:#00a884;font-weight:700">Conectado!</span>
+      </div>
+    </div>
+    <div class="qr-status" id="qr-status">Aguardando QR Code do servidor…</div>
+
+    <ol class="steps" id="qr-steps">
+      <li><span class="num">1.</span><span>Abra o <span>WhatsApp</span> no celular</span></li>
+      <li><span class="num">2.</span><span>Toque em <span>Menu ⋮</span> (Android) ou <span>Configurações</span> (iPhone)</span></li>
+      <li><span class="num">3.</span><span>Toque em <span>Dispositivos conectados</span></span></li>
+      <li><span class="num">4.</span><span>Toque em <span>Conectar dispositivo</span></span></li>
+      <li><span class="num">5.</span><span>Aponte a câmera para o QR Code acima</span></li>
+    </ol>
+  </div>
+
+  <!-- ── Phone Panel ── -->
+  <div id="panel-phone">
+    <div class="banner info" id="phone-banner">
+      Insira o número do WhatsApp que você quer vincular.<br>O sistema gerará um código de 8 caracteres.
+    </div>
+
+    <div class="phone-input-wrap">
+      <label class="phone-label">Número do WhatsApp (com DDD)</label>
+      <input class="phone-input" id="phone-input" type="tel"
+        placeholder="Ex: (11) 99999-9999"
+        onkeydown="if(event.key==='Enter') solicitarCodigo()" />
+    </div>
+
+    <button class="btn-pair" id="btn-pair" onclick="solicitarCodigo()">Gerar código de vinculação</button>
+
+    <div class="pairing-code-box" id="pairing-box">
+      <div class="code-label">Seu código de vinculação</div>
+      <div class="code-value" id="pairing-code">– – – – – – – –</div>
+      <div class="code-hint">
+        No WhatsApp do celular:<br>
+        Configurações → Dispositivos conectados → Vincular com número de telefone<br>
+        → Digite o código acima
+      </div>
+    </div>
+
+    <ol class="steps">
+      <li><span class="num">1.</span><span>Insira seu número de WhatsApp acima</span></li>
+      <li><span class="num">2.</span><span>Clique em <span>Gerar código</span></span></li>
+      <li><span class="num">3.</span><span>No celular: <span>Configurações → Dispositivos conectados → Vincular com número</span></span></li>
+      <li><span class="num">4.</span><span>Digite os 8 caracteres mostrados aqui</span></li>
+    </ol>
+  </div>
+
+  <div class="tip">
+    Acesse o painel de aprovação em
+    <a href="/" style="color:#00a884;text-decoration:none">localhost:3000</a>
+  </div>
+</div>
+
+<script>
+const API_BASE = '';   // mesmo servidor
+let pollTimer   = null;
+let lastQrStr   = null;
+let activeTab   = 'qr';
+
+function switchTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-qr').style.display    = tab === 'qr'    ? 'flex' : 'none';
+  document.getElementById('panel-phone').style.display = tab === 'phone' ? 'flex' : 'none';
+}
+
+// ── QR polling ────────────────────────────────────────────────────────────
+async function pollQr() {
+  try {
+    const r    = await fetch(API_BASE + '/api/whatsapp-qr');
+    const data = await r.json();
+
+    if (data.status === 'connected') {
+      showConnected();
+      return; // stop polling
+    }
+
+    if (data.status === 'zapi') {
+      setStatus('WhatsApp gerenciado via Z-API. Não é necessário vincular aqui.', 'ok');
+      showZapiBanner();
+      return;
+    }
+
+    if (data.status === 'qr_ready' && data.qr_string) {
+      if (data.qr_string !== lastQrStr) {
+        lastQrStr = data.qr_string;
+        await renderQr(data.qr_string);
+      }
+      setStatus('Escaneie com o WhatsApp do seu celular', 'ok');
+    } else {
+      setStatus('Aguardando QR Code do servidor…');
+      showSpinner();
+    }
+  } catch {
+    setStatus('Servidor não detectado — inicie: npm run dev:api', 'error');
+  }
+
+  pollTimer = setTimeout(pollQr, 5000);
+}
+
+async function renderQr(qrStr) {
+  const canvas  = document.getElementById('qr-canvas');
+  const spinner = document.getElementById('qr-spinner');
+  const connected = document.getElementById('qr-connected');
+
+  try {
+    await QRCode.toCanvas(canvas, qrStr, {
+      width: 240,
+      margin: 2,
+      color: { dark: '#111b21', light: '#ffffff' },
+    });
+    spinner.style.display    = 'none';
+    connected.style.display  = 'none';
+    canvas.style.display     = 'block';
+  } catch (e) {
+    setStatus('Erro ao renderizar QR: ' + e.message, 'error');
+  }
+}
+
+function showSpinner() {
+  document.getElementById('qr-spinner').style.display   = 'block';
+  document.getElementById('qr-canvas').style.display    = 'none';
+  document.getElementById('qr-connected').style.display = 'none';
+}
+
+function showConnected() {
+  clearTimeout(pollTimer);
+  document.getElementById('qr-spinner').style.display   = 'none';
+  document.getElementById('qr-canvas').style.display    = 'none';
+  const conn = document.getElementById('qr-connected');
+  conn.style.display = 'flex';
+  setStatus('WhatsApp conectado com sucesso! ✅', 'ok');
+  document.getElementById('qr-steps').style.display     = 'none';
+  document.getElementById('subtitle').textContent       = 'Conta vinculada — pode fechar esta janela';
+}
+
+function showZapiBanner() {
+  clearTimeout(pollTimer);
+  showSpinner();
+  document.getElementById('qr-wrap').innerHTML = `
+    <div style="text-align:center;padding:20px;color:#00a884;font-size:0.95rem">
+      <div style="font-size:2rem;margin-bottom:10px">⚡</div>
+      Z-API<br><span style="font-size:0.8rem;color:#8696a0">WhatsApp gerenciado externamente</span>
+    </div>`;
+  document.getElementById('qr-steps').style.display = 'none';
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('qr-status');
+  el.textContent = msg;
+  el.className = 'qr-status ' + type;
+}
+
+// ── Phone pairing ──────────────────────────────────────────────────────────
+async function solicitarCodigo() {
+  const phone = document.getElementById('phone-input').value.trim();
+  if (!phone || phone.replace(/\D/g,'').length < 10) {
+    document.getElementById('phone-banner').className = 'banner error';
+    document.getElementById('phone-banner').textContent = 'Informe um número válido com DDD (ex: 11 99999-9999)';
+    return;
+  }
+
+  const btn = document.getElementById('btn-pair');
+  btn.disabled = true;
+  btn.textContent = 'Gerando código…';
+
+  try {
+    const r    = await fetch(API_BASE + '/api/whatsapp-pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await r.json();
+
+    if (data.code) {
+      const box  = document.getElementById('pairing-box');
+      const code = document.getElementById('pairing-code');
+      // Format as "ABCD-EFGH"
+      const raw  = String(data.code).replace(/\s/g,'');
+      code.textContent = raw.length >= 8
+        ? raw.slice(0,4) + ' — ' + raw.slice(4,8)
+        : raw;
+      box.classList.add('show');
+      document.getElementById('phone-banner').className = 'banner success';
+      document.getElementById('phone-banner').textContent = '✅ Código gerado! Digite-o no WhatsApp conforme as instruções abaixo.';
+    } else {
+      throw new Error(data.error || 'Erro desconhecido');
+    }
+  } catch (err) {
+    document.getElementById('phone-banner').className = 'banner error';
+    document.getElementById('phone-banner').textContent = '❌ Erro: ' + err.message;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Gerar código de vinculação';
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+pollQr();
+</script>
+</body>
+</html>

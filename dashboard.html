@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Pipeline de Vendas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1f2e;
+      border-bottom: 1px solid #2d3748;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    header h1 span { color: #25D366; }
+
+    #ultima-atualizacao {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+    /* Seção hoje */
+    .hoje-banner {
+      background: linear-gradient(135deg, #1a3a2a, #0f2a1a);
+      border: 1px solid #25D366;
+      border-radius: 12px;
+      padding: 1.25rem 1.75rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    .hoje-banner .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4ade80;
+      margin-bottom: 0.25rem;
+    }
+
+    .hoje-banner .val {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* Grid de cards */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s;
+    }
+
+    .card:hover { transform: translateY(-2px); }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: var(--accent, #4a6fa5);
+    }
+
+    .card .icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .card .card-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 0.3rem; }
+    .card .card-val { font-size: 2rem; font-weight: 800; color: #fff; }
+    .card .card-sub { font-size: 0.75rem; color: #64748b; margin-top: 0.15rem; }
+
+    /* Tabela de estágios */
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 0.75rem;
+    }
+
+    .estagios {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .estagio-row {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid #2d3748;
+      gap: 1rem;
+    }
+
+    .estagio-row:last-child { border-bottom: none; }
+
+    .estagio-nome {
+      flex: 1;
+      font-size: 0.85rem;
+      text-transform: capitalize;
+    }
+
+    .estagio-bar-wrap { flex: 3; background: #0f1117; border-radius: 99px; height: 8px; overflow: hidden; }
+    .estagio-bar { height: 100%; border-radius: 99px; background: var(--c, #4a6fa5); transition: width 0.8s ease; }
+
+    .estagio-count { font-size: 0.85rem; font-weight: 700; color: #fff; min-width: 28px; text-align: right; }
+
+    /* receita */
+    .receita-card {
+      background: linear-gradient(135deg, #1a2a3a, #0f1a2a);
+      border: 1px solid #3b82f6;
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .receita-card .r-label { font-size: 0.75rem; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; }
+    .receita-card .r-val { font-size: 2.5rem; font-weight: 900; color: #fff; }
+    .receita-card .r-sub { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+    .receita-card .r-icon { font-size: 3rem; opacity: 0.4; }
+
+    /* taxas */
+    .taxas {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .taxa-card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .taxa-card .t-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 0.4rem; }
+    .taxa-card .t-val { font-size: 2.5rem; font-weight: 900; color: #25D366; }
+
+    /* refresh btn */
+    .refresh-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #25D366;
+      color: #000;
+      border: none;
+      padding: 0.5rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .refresh-btn:hover { opacity: 0.85; }
+
+    #status-msg { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
+
+    @media (max-width: 600px) {
+      .hoje-banner { flex-direction: column; gap: 1rem; }
+      .taxas { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Pipeline <span>Victor</span></h1>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
+      <button class="refresh-btn" onclick="loadStats()">↻ Atualizar</button>
+      <span id="ultima-atualizacao">—</span>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- Hoje -->
+    <div class="hoje-banner" id="hoje-banner">
+      <div>
+        <div class="label">Enviados hoje</div>
+        <div class="val" id="hoje-enviados">—</div>
+      </div>
+      <div>
+        <div class="label">Responderam hoje</div>
+        <div class="val" id="hoje-responderam">—</div>
+      </div>
+      <div>
+        <div class="label">Conversas ativas</div>
+        <div class="val" id="conversas-ativas">—</div>
+      </div>
+    </div>
+
+    <!-- Cards principais -->
+    <p class="section-title">Pipeline — últimos 7 dias</p>
+    <div class="grid">
+      <div class="card" style="--accent:#6366f1">
+        <div class="icon">📋</div>
+        <div class="card-label">Abordados</div>
+        <div class="card-val" id="total-abordados">—</div>
+        <div class="card-sub">leads pesquisados</div>
+      </div>
+      <div class="card" style="--accent:#f59e0b">
+        <div class="icon">🔍</div>
+        <div class="card-label">Probe enviado</div>
+        <div class="card-val" id="probe-enviado">—</div>
+        <div class="card-sub">mensagens curtas</div>
+      </div>
+      <div class="card" style="--accent:#25D366">
+        <div class="icon">📤</div>
+        <div class="card-label">Apresentação</div>
+        <div class="card-val" id="apresentacao-enviada">—</div>
+        <div class="card-sub">pitch completo</div>
+      </div>
+      <div class="card" style="--accent:#06b6d4">
+        <div class="icon">💬</div>
+        <div class="card-label">Responderam</div>
+        <div class="card-val" id="responderam">—</div>
+        <div class="card-sub">conversas abertas</div>
+      </div>
+      <div class="card" style="--accent:#8b5cf6">
+        <div class="icon">🤝</div>
+        <div class="card-label">Negociação</div>
+        <div class="card-val" id="em-negociacao">—</div>
+        <div class="card-sub">leads quentes</div>
+      </div>
+      <div class="card" style="--accent:#10b981">
+        <div class="icon">✅</div>
+        <div class="card-label">Fechamentos</div>
+        <div class="card-val" id="fechamentos">—</div>
+        <div class="card-sub">clientes conquistados</div>
+      </div>
+    </div>
+
+    <!-- Taxas -->
+    <p class="section-title">Taxas de conversão</p>
+    <div class="taxas">
+      <div class="taxa-card">
+        <div class="t-label">Taxa de resposta</div>
+        <div class="t-val" id="taxa-resposta">—</div>
+      </div>
+      <div class="taxa-card">
+        <div class="t-label">Taxa de conversão</div>
+        <div class="t-val" id="taxa-conversao">—</div>
+      </div>
+    </div>
+
+    <!-- Receita potencial -->
+    <div class="receita-card">
+      <div>
+        <div class="r-label">Receita potencial</div>
+        <div class="r-val" id="receita-potencial">—</div>
+        <div class="r-sub">leads em negociação + fechamentos × ticket médio R$597</div>
+      </div>
+      <div class="r-icon">💰</div>
+    </div>
+
+    <!-- Estágios -->
+    <p class="section-title">Conversas por estágio</p>
+    <div class="estagios" id="estagios-container">
+      <div class="estagio-row" style="color:#64748b;font-size:0.8rem;">Carregando...</div>
+    </div>
+
+  </div>
+
+  <script>
+    const STAGE_LABELS = {
+      primeiro_contato: 'Primeiro contato',
+      interesse: 'Interesse',
+      negociacao: 'Negociação',
+      objecao: 'Objeção',
+      fechamento: 'Fechamento',
+      encerrado: 'Encerrado',
+    };
+
+    const STAGE_COLORS = {
+      primeiro_contato: '#64748b',
+      interesse: '#f59e0b',
+      negociacao: '#8b5cf6',
+      objecao: '#ef4444',
+      fechamento: '#10b981',
+      encerrado: '#374151',
+    };
+
+    function fmt(v) { return v != null ? v : '—'; }
+
+    async function loadStats() {
+      try {
+        const r = await fetch('/api/dashboard/stats');
+        if (!r.ok) throw new Error(r.statusText);
+        const d = await r.json();
+
+        // Header
+        document.getElementById('ultima-atualizacao').textContent =
+          'Atualizado: ' + new Date(d.ultima_atualizacao).toLocaleTimeString('pt-BR');
+
+        // Hoje
+        document.getElementById('hoje-enviados').textContent    = fmt(d.hoje?.enviados);
+        document.getElementById('hoje-responderam').textContent = fmt(d.hoje?.responderam);
+        document.getElementById('conversas-ativas').textContent = fmt(d.conversas_ativas);
+
+        // Pipeline
+        const p = d.pipeline || {};
+        document.getElementById('total-abordados').textContent    = fmt(p.total_abordados);
+        document.getElementById('probe-enviado').textContent       = fmt(p.probe_enviado);
+        document.getElementById('apresentacao-enviada').textContent = fmt(p.apresentacao_enviada);
+        document.getElementById('responderam').textContent         = fmt(p.responderam);
+        document.getElementById('em-negociacao').textContent       = fmt(p.em_negociacao);
+        document.getElementById('fechamentos').textContent         = fmt(p.fechamentos);
+        document.getElementById('taxa-resposta').textContent       = fmt(p.taxa_resposta);
+        document.getElementById('taxa-conversao').textContent      = fmt(p.taxa_conversao);
+        document.getElementById('receita-potencial').textContent   = fmt(d.receita_potencial);
+
+        // Estágios
+        const pe = d.por_estagio || {};
+        const total = Object.values(pe).reduce((a, b) => a + b, 0) || 1;
+        const ORDER = ['primeiro_contato','interesse','negociacao','objecao','fechamento','encerrado'];
+        const stages = ORDER.filter(k => pe[k] != null);
+
+        const container = document.getElementById('estagios-container');
+        container.innerHTML = stages.map(k => {
+          const count = pe[k] || 0;
+          const pct = Math.round((count / total) * 100);
+          const color = STAGE_COLORS[k] || '#4a6fa5';
+          const label = STAGE_LABELS[k] || k;
+          return `
+            <div class="estagio-row">
+              <span class="estagio-nome">${label}</span>
+              <div class="estagio-bar-wrap">
+                <div class="estagio-bar" style="--c:${color};width:${pct}%"></div>
+              </div>
+              <span class="estagio-count">${count}</span>
+            </div>`;
+        }).join('') || '<div class="estagio-row" style="color:#64748b;font-size:0.8rem;">Nenhuma conversa ainda</div>';
+
+      } catch (e) {
+        console.error(e);
+        document.getElementById('ultima-atualizacao').textContent = 'Erro ao carregar: ' + e.message;
+      }
+    }
+
+    loadStats();
+    setInterval(loadStats, 60_000); // atualiza a cada 1 min
+  </script>
+</body>
+</html>

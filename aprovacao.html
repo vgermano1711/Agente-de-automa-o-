@@ -77,22 +77,106 @@
     .canal-instagram { background: #9333ea; color: #fff; }
     .canal-linkedin { background: #0369a1; color: #fff; }
     .canal-sms { background: #047857; color: #fff; }
+    .tipo-site { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
+    .tipo-automacao { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b44; }
 
     .card-body { display: grid; grid-template-columns: 1fr 1fr; }
     @media (max-width: 900px) { .card-body { grid-template-columns: 1fr; } }
 
-    .card-preview { border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .card-preview { border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+    .card-preview > div { width: 100%; }
     .preview-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
 
-    .lp-frame {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      background: #fff;
-      position: relative;
-      height: 280px;
+    /* ── Mobile phone frame para preview da LP ── */
+    .lp-phone-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
-    .lp-frame iframe { width: 100%; height: 100%; border: none; }
+    .lp-phone {
+      position: relative;
+      width: 200px;
+      height: 380px;
+      background: #1a1d2e;
+      border-radius: 32px;
+      border: 2px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04);
+      overflow: hidden;
+    }
+    .lp-phone::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      z-index: 10;
+    }
+    .lp-phone-screen {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow: hidden;
+      border-radius: 30px;
+    }
+    .lp-phone-screen iframe {
+      width: 390px;
+      height: 844px;
+      border: none;
+      transform: scale(0.51);
+      transform-origin: top left;
+      pointer-events: none;
+    }
+    .lp-phone-loader {
+      position: absolute;
+      inset: 0;
+      background: #0d1117;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      transition: opacity .5s;
+      z-index: 5;
+    }
+    .lp-phone-loader.loaded { opacity: 0; pointer-events: none; }
+    .lp-spin {
+      width: 24px; height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .lp-link-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .lp-open-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 4px 10px;
+      border: 1px solid rgba(108,99,255,.3);
+      border-radius: 6px;
+      transition: background .15s;
+    }
+    .lp-open-btn:hover { background: rgba(108,99,255,.12); }
+
     .lp-placeholder {
       height: 280px;
       background: linear-gradient(135deg, #1a1d2e 0%, #2a2d3e 100%);
@@ -180,7 +264,35 @@
     .relatorio-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
     .relatorio-box pre { font-size: 0.85rem; white-space: pre-wrap; color: #a5f3fc; }
 
-    #tab-respostas, #tab-relatorio { display: none; }
+    #tab-respostas, #tab-relatorio, #tab-pesquisar { display: none; }
+
+    /* ── Pesquisa ── */
+    .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .search-row { display: flex; gap: 12px; }
+    .search-input { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 0.95rem; outline: none; transition: border .2s; }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+    .btn-search { background: var(--accent); color: #fff; padding: 12px 24px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity .15s; }
+    .btn-search:hover { opacity: .85; }
+    .search-hint { font-size: 0.8rem; color: var(--muted); margin-top: 10px; }
+    .search-results { display: grid; gap: 16px; }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    @media (max-width: 700px) { .result-card { flex-direction: column; } }
+    .result-info { flex: 1; }
+    .result-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+    .result-meta { font-size: 0.82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .result-stars { color: #f59e0b; font-weight: 700; }
+    .site-badge { padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+    .site-sem_site { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e44; }
+    .site-site_antigo { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b44; }
+    .site-site_ok { background: #64748b22; color: #64748b; border: 1px solid #64748b44; }
+    .result-address { font-size: 0.83rem; color: var(--muted); }
+    .result-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .btn-prospectar { background: var(--green); color: #fff; padding: 10px 18px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity .15s; }
+    .btn-prospectar:hover { opacity: .85; }
+    .btn-prospectar:disabled { opacity: .4; cursor: not-allowed; }
+    .oportunidade-tag { font-size: 0.75rem; color: var(--green); font-weight: 600; }
+    .search-loading { text-align: center; padding: 40px; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -203,6 +315,7 @@
 <div class="tabs">
   <div class="tab active" onclick="showTab('aprovacao',this)">Aprovações <span id="badge-aprovacao" class="canal-badge canal-linkedin" style="margin-left:6px;vertical-align:middle">0</span></div>
   <div class="tab" onclick="showTab('respostas',this)">Respostas de Leads</div>
+  <div class="tab" onclick="showTab('pesquisar',this)">🔍 Pesquisar Lead</div>
   <div class="tab" onclick="showTab('relatorio',this)">Relatório</div>
 </div>
 
@@ -216,10 +329,24 @@
 
   <div id="tab-aprovacao">
     <div class="cards-grid" id="cards-container"></div>
+    <div id="historico-section" style="display:none"></div>
   </div>
 
   <div id="tab-respostas">
     <div class="respostas-list" id="respostas-container"></div>
+  </div>
+
+  <div id="tab-pesquisar">
+    <div class="search-box">
+      <div class="search-row">
+        <input class="search-input" id="search-input" type="text"
+          placeholder="Ex: barbearia Curitiba, salão de beleza São Paulo, clínica odontológica Campinas..."
+          onkeydown="if(event.key==='Enter') pesquisar()" />
+        <button class="btn-search" onclick="pesquisar()">🔍 Pesquisar</button>
+      </div>
+      <div class="search-hint">Busca negócios no Google Maps e analisa o potencial de cada lead automaticamente.</div>
+    </div>
+    <div id="search-results" class="search-results"></div>
   </div>
 
   <div id="tab-relatorio">
@@ -239,7 +366,7 @@ const MOCK_MESSAGES = [
     lead_id: 'lead_1',
     nome_negocio: 'Salão da Dona Maria',
     canal: 'whatsapp',
-    corpo: 'Oi, Salão da Dona Maria! 👋\nVi vocês no Google — 4.2 estrelas é difícil de conseguir. Só que quem busca salão de beleza em São Paulo agora não te encontra online.\nMontei uma prévia do que poderia ser o site de vocês: https://demo-salao-da-dona-maria.netlify.app\nMe fala o que achou!',
+    corpo: 'Oi, Salão da Dona Maria! 👋\nVi vocês no Google — 4.2 estrelas é difícil de conseguir. Só que quem busca salão de beleza em São Paulo agora não te encontra online.\nMontei uma prévia do que poderia ser o site de vocês: https://sales-bot-salao-da-dona-maria.surge.sh\nMe fala o que achou!',
     landing_page_url: null,
     video_path: null,
     status: 'aprovacao_pendente',
@@ -253,7 +380,7 @@ const MOCK_MESSAGES = [
     lead_id: 'lead_2',
     nome_negocio: 'Construtora Horizonte',
     canal: 'whatsapp',
-    corpo: 'Oi, Construtora Horizonte! 👋\n81 avaliações no Google e nenhuma página própria para capturar quem pesquisa "construtora em Campinas" agora.\nFiz uma demonstração de como ficaria: https://demo-construtora-horizonte.netlify.app\nFaz sentido conversar?',
+    corpo: 'Oi, Construtora Horizonte! 👋\n81 avaliações no Google e nenhuma página própria para capturar quem pesquisa "construtora em Campinas" agora.\nFiz uma demonstração de como ficaria: https://sales-bot-construtora-horizonte.surge.sh\nFaz sentido conversar?',
     landing_page_url: null,
     video_path: null,
     status: 'aprovacao_pendente',
@@ -267,7 +394,7 @@ const MOCK_MESSAGES = [
     lead_id: 'lead_3',
     nome_negocio: 'Clínica Sorria Mais',
     canal: 'whatsapp',
-    corpo: 'Oi, Clínica Sorria Mais! 👋\n69 avaliações positivas no Google mas quem busca dentista em Campinas agora não chega até vocês.\nMontei uma prévia do que poderia ser a página de vocês: https://demo-clinica-sorria-mais.netlify.app\nMe fala o que acharam!',
+    corpo: 'Oi, Clínica Sorria Mais! 👋\n69 avaliações positivas no Google mas quem busca dentista em Campinas agora não chega até vocês.\nMontei uma prévia do que poderia ser a página de vocês: https://sales-bot-clinica-sorria-mais.surge.sh\nMe fala o que acharam!',
     landing_page_url: null,
     video_path: null,
     status: 'aprovacao_pendente',
@@ -349,11 +476,162 @@ function scoreColor(s) {
 function showTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['aprovacao','respostas','relatorio'].forEach(t => {
+  ['aprovacao','respostas','pesquisar','relatorio'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   if (tab === 'respostas') renderRespostas();
   if (tab === 'relatorio') renderRelatorio();
+  if (tab === 'pesquisar') document.getElementById('search-input').focus();
+}
+
+// ─── Pesquisa de Leads ───────────────────────────────────────────────────────
+let _searchResults = [];
+let _searchMock = false;
+
+async function pesquisar() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+
+  const container = document.getElementById('search-results');
+  container.innerHTML = '<div class="search-loading">🔍 Buscando no Google Maps...</div>';
+
+  try {
+    const url = isLive ? (API_BASE + '/api/pesquisar?q=' + encodeURIComponent(q)) : null;
+
+    if (!url) {
+      // Mock para modo demo
+      await new Promise(r => setTimeout(r, 1200));
+      const mock = [
+        { place_id:'m1', nome: q.split(' ')[0]+' Premium', endereco:'Rua das Flores, 123 — São Paulo, SP', telefone:'(11) 99999-0001', avaliacao:4.8, total_avaliacoes:312, website:null, categoria:q, cidade:'São Paulo, SP', status_site:'sem_site' },
+        { place_id:'m2', nome: q.split(' ')[0]+' Centro', endereco:'Av. Paulista, 456 — São Paulo, SP', telefone:'(11) 99999-0002', avaliacao:4.5, total_avaliacoes:187, website:'http://site-antigo.com.br', categoria:q, cidade:'São Paulo, SP', status_site:'site_antigo' },
+        { place_id:'m3', nome: q.split(' ')[0]+' Express', endereco:'Rua Augusta, 789 — São Paulo, SP', telefone:'(11) 99999-0003', avaliacao:4.3, total_avaliacoes:94, website:null, categoria:q, cidade:'São Paulo, SP', status_site:'sem_site' },
+      ];
+      renderResultados(mock, true);
+      return;
+    }
+
+    const r = await fetch(url);
+    const data = await r.json();
+    renderResultados(data.resultados || [], data.mock);
+  } catch (err) {
+    container.innerHTML = '<div class="search-loading">❌ Erro ao buscar: ' + err.message + '</div>';
+  }
+}
+
+function siteLabel(s) {
+  const map = { sem_site: '🟢 Sem site — ótima oportunidade', site_antigo: '🟡 Site desatualizado', site_ok: '⚪ Já tem site moderno' };
+  return map[s] || s;
+}
+
+function renderResultados(resultados, isMock) {
+  _searchResults = resultados;
+  _searchMock = isMock;
+  const container = document.getElementById('search-results');
+  if (!resultados.length) {
+    container.innerHTML = '<div class="search-loading">Nenhum resultado encontrado.</div>';
+    return;
+  }
+
+  const mockBanner = isMock ? '<div style="background:#2d2a00;border:1px solid #f59e0b44;border-radius:8px;padding:10px 14px;font-size:0.8rem;color:#f59e0b;margin-bottom:16px">⚡ Resultados de exemplo — configure GOOGLE_PLACES_API_KEY para dados reais do Google Maps</div>' : '';
+
+  container.innerHTML = mockBanner + resultados.map(r => {
+    const oportunidade = r.status_site !== 'site_ok';
+    const stars = '★'.repeat(Math.round(r.avaliacao)) + '☆'.repeat(5 - Math.round(r.avaliacao));
+    return `
+    <div class="result-card">
+      <div class="result-info">
+        <div class="result-name">${escHtml(r.nome)}</div>
+        <div class="result-meta">
+          <span class="result-stars">${stars} ${r.avaliacao.toFixed(1)}</span>
+          <span>${r.total_avaliacoes} avaliações</span>
+          ${r.telefone ? '<span>📞 ' + escHtml(r.telefone) + '</span>' : ''}
+          <span class="site-badge site-${r.status_site}">${siteLabel(r.status_site)}</span>
+        </div>
+        <div class="result-address">📍 ${escHtml(r.endereco)}</div>
+        ${r.website ? '<div style="margin-top:6px;font-size:0.8rem;color:var(--muted)">🌐 ' + escHtml(r.website) + '</div>' : ''}
+      </div>
+      <div class="result-actions">
+        ${oportunidade ? '<div class="oportunidade-tag">✦ Boa oportunidade</div>' : ''}
+        <button class="btn-prospectar" id="btn-${r.place_id}"
+          ${_prospectados.has(r.place_id) ? 'disabled' : `onclick="prospectar(${JSON.stringify(r).replace(/"/g,'&quot;')})"`}>
+          ${_prospectados.has(r.place_id) ? '✓ Em processamento' : (oportunidade ? '🚀 Prospectar este lead' : '📋 Adicionar mesmo assim')}
+        </button>
+        <small style="color:var(--muted);font-size:0.72rem;text-align:right">Gera landing page<br>+ mensagem WhatsApp</small>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+const _prospectados = new Set();
+
+async function prospectar(lead) {
+  if (_prospectados.has(lead.place_id)) return;
+  const btn = document.getElementById('btn-' + lead.place_id);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Processando...'; }
+
+  if (!isLive) {
+    await new Promise(r => setTimeout(r, 1500));
+    toast('✅ (Demo) Pipeline iniciado para ' + lead.nome + '! Em modo real, geraria landing page e mensagem WhatsApp.');
+    _prospectados.add(lead.place_id);
+    if (btn) { btn.disabled = true; btn.textContent = '✓ Adicionado'; }
+    return;
+  }
+
+  try {
+    const r = await fetch(API_BASE + '/api/prospectar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead),
+    });
+    await r.json();
+    _prospectados.add(lead.place_id);
+    toast('🚀 Gerando landing page e mensagem para ' + lead.nome + '… aguarde.');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Gerando…'; }
+    _aguardarMensagem(lead, btn);
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Prospectar este lead'; }
+  }
+}
+
+function _aguardarMensagem(lead, btn) {
+  const baselineIds = new Set(messages.map(m => m.id));
+  const nomeNorm = lead.nome.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const inicio = Date.now();
+  const MAX_ESPERA = 5 * 60 * 1000; // 5 minutos
+  let dots = 0;
+
+  const intervalo = setInterval(async () => {
+    if (Date.now() - inicio > MAX_ESPERA) {
+      clearInterval(intervalo);
+      if (btn) { btn.textContent = '✓ Em processamento'; }
+      toast('Pipeline ainda rodando — verifique a aba Aprovações em breve.');
+      return;
+    }
+
+    dots = (dots + 1) % 4;
+    if (btn) { btn.textContent = '⏳ Gerando' + '.'.repeat(dots + 1); }
+
+    try {
+      const r = await fetch(API_BASE + '/api/mensagens');
+      const novas = await r.json();
+      const nova = novas.find(m =>
+        !baselineIds.has(m.id) &&
+        m.nome_negocio?.toLowerCase().replace(/[^a-z0-9]/g, '').includes(nomeNorm.slice(0, 8))
+      );
+      if (nova) {
+        clearInterval(intervalo);
+        messages = novas;
+        renderMessages();
+        if (btn) { btn.disabled = true; btn.textContent = '✓ Pronto!'; }
+        toast('✅ Mensagem para ' + lead.nome + ' pronta! Redirecionando para Aprovações…');
+        setTimeout(() => {
+          const tabEl = document.querySelector('.tab[onclick*="aprovacao"]');
+          if (tabEl) tabEl.click();
+        }, 1200);
+      }
+    } catch { /* ignora erros de rede temporários */ }
+  }, 5000);
 }
 
 // ─── Aprovações ─────────────────────────────────────────────────────────────
@@ -385,29 +663,104 @@ function renderMessages() {
       <p>Nenhuma mensagem pendente</p>
       <small style="margin-top:8px;display:block">O pipeline roda todo dia às 08:00, ou rode <code style="background:#1a1d2e;padding:2px 6px;border-radius:4px">npm run run-now</code></small>
     </div>`;
-    return;
+  } else {
+    container.innerHTML = pending.map(renderCard).join('');
   }
-  container.innerHTML = pending.map(renderCard).join('');
+  loadHistorico();
+}
+
+async function loadHistorico() {
+  const section = document.getElementById('historico-section');
+  if (!section) return;
+  if (!isLive) { section.style.display = 'none'; return; }
+
+  try {
+    const r = await fetch(API_BASE + '/api/mensagens/enviadas');
+    const enviadas = await r.json();
+    if (!enviadas.length) { section.style.display = 'none'; return; }
+
+    section.style.display = 'block';
+    section.innerHTML = `
+      <h3 style="color:var(--muted);font-size:0.85rem;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 12px">
+        📤 Enviadas (${enviadas.length})
+      </h3>
+      ${enviadas.map(m => `
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;opacity:0.7">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>${escHtml(m.nome_negocio)}</strong>
+            <span style="display:flex;gap:8px;align-items:center">
+              <span class="canal-badge canal-${m.canal}">${m.canal}</span>
+              <small style="color:var(--muted)">${new Date(m.data_envio).toLocaleString('pt-BR')}</small>
+            </span>
+          </div>
+          <div style="font-size:0.85rem;color:var(--muted);white-space:pre-wrap;line-height:1.5">${escHtml(m.corpo)}</div>
+          ${m.landing_page_url ? `<a href="${escHtml(m.landing_page_url)}" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--accent);text-decoration:none;display:inline-block;margin-top:8px">🔗 Ver landing page ↗</a>` : ''}
+        </div>`).join('')}`;
+  } catch { section.style.display = 'none'; }
 }
 
 function renderCard(msg) {
-  const score = msg.revisao_score || 75;
-  const lpUrl = msg.landing_page_url;
+  const score  = msg.revisao_score || 75;
+  const lpUrl  = msg.landing_page_url;
+  const cardId = msg.id;
 
+  // WhatsApp deep-link: dígitos limpos com DDI 55
+  const telDigits = (msg._telefone || '').replace(/\D/g, '');
+  const telWa     = telDigits ? (telDigits.startsWith('55') ? telDigits : '55' + telDigits) : '';
+  const waHref    = (msg.canal === 'whatsapp' && telWa)
+    ? 'https://wa.me/' + telWa + '?text=' + encodeURIComponent(msg.corpo)
+    : null;
+
+  // ── LP Preview: phone mockup com iframe escalado 0.51× (390→200px) ──
   let lpSection;
-  if (lpUrl) {
-    lpSection = `<div class="lp-frame"><iframe src="${escHtml(lpUrl)}" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe></div>`;
+  const localPath  = `/pages/${escHtml(msg.slug)}/`;
+  const publicUrl  = (lpUrl && !lpUrl.startsWith('http://localhost')) ? lpUrl : null;
+  const lpExists   = msg.lp_local_exists !== false; // true quando API confirma que o arquivo existe
+
+  if (lpUrl && lpExists) {
+    // Página local confirmada — iframe direto
+    lpSection = `
+      <div class="lp-phone-wrap">
+        <div class="lp-phone">
+          <div class="lp-phone-screen">
+            <div class="lp-phone-loader" id="lp-loader-${cardId}">
+              <div class="lp-spin"></div>
+              <span>Carregando prévia…</span>
+            </div>
+            <iframe src="${localPath}"
+              onload="document.getElementById('lp-loader-${cardId}')?.classList.add('loaded')"
+              allow=""></iframe>
+          </div>
+        </div>
+        <div class="lp-link-row">
+          <a class="lp-open-btn" href="${localPath}" target="_blank" rel="noopener">🖥 Ver local ↗</a>
+        </div>
+      </div>`;
+  } else if (lpUrl && !lpExists) {
+    // URL existe mas arquivo local não — mostra link público se disponível
+    lpSection = `<div class="lp-placeholder">
+      ⏳
+      <span>Página ainda não gerada localmente</span>
+      ${publicUrl
+        ? `<a href="${escHtml(publicUrl)}" target="_blank" rel="noopener">🌐 Ver versão online ↗</a>`
+        : '<small>Execute <code>npm run reset && npm run run-now</code></small>'}
+    </div>`;
   } else {
     lpSection = `<div class="lp-placeholder">
       🌐
-      <span>Landing page ${isLive ? 'não disponível localmente' : '(disponível após deploy Netlify)'}</span>
-      ${lpUrl ? `<a href="${escHtml(lpUrl)}" target="_blank" rel="noopener">Abrir link ↗</a>` : ''}
+      <span>Landing page não disponível</span>
+      <small>Rode o Agente 3 para gerar</small>
     </div>`;
   }
 
-  const videoSection = msg.video_path
-    ? `<video style="width:100%;border-radius:8px;background:#000;max-height:180px" src="/videos/${escHtml(msg.slug)}.mp4" controls muted preload="metadata"></video>`
-    : `<div class="video-placeholder">🎬 <span>Vídeo gerado após rodar o Agente 4</span></div>`;
+  // ── Vídeo: player real ou placeholder informativo ──
+  const videoExists  = msg.video_local_exists === true;
+  const videoSection = videoExists
+    ? `<video style="width:100%;max-width:200px;border-radius:12px;background:#000;display:block;margin:0 auto"
+         src="/videos/${escHtml(msg.slug)}.mp4"
+         controls muted preload="metadata"
+         title="Prévia de scroll — ${escHtml(msg.nome_negocio)}"></video>`
+    : `<div class="video-placeholder" style="border-radius:8px;height:120px">🎬 <span>Vídeo será gerado pelo Agente 4</span></div>`;
 
   return `<div class="card" id="card-${msg.id}">
     <div class="card-header">
@@ -416,6 +769,7 @@ function renderCard(msg) {
         <small style="color:var(--muted)">${escHtml(msg.slug)}</small>
       </div>
       <span class="canal-badge canal-${msg.canal}">${msg.canal}</span>
+      <span class="canal-badge tipo-${msg.tipo_produto || 'site'}" style="margin-left:6px">${msg.tipo_produto === 'automacao' ? '⚙ Automação' : '🌐 Site'}</span>
     </div>
     <div class="card-body">
       <div class="card-preview">
@@ -432,6 +786,25 @@ function renderCard(msg) {
           <strong style="color:${scoreColor(score)}">${score}/100</strong>
         </div>
         ${msg.revisao_notas ? `<small style="color:var(--muted);font-size:.75rem">${escHtml(msg.revisao_notas)}</small>` : ''}
+        <div style="margin-top:14px;background:#0d1117;border-radius:8px;border-left:3px solid #25d366;padding:14px 14px 10px">
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📋 Mensagem para enviar ao cliente</div>
+          <div style="font-size:0.88rem;line-height:1.65;white-space:pre-wrap;color:var(--text);margin-bottom:12px">${escHtml(msg.corpo)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" style="background:#2a2d3e;color:var(--text);font-size:0.8rem;padding:6px 14px"
+              onclick="copiarMensagem('${msg.id}', this)">📋 Copiar mensagem</button>
+            ${waHref ? `<a href="${waHref}" target="_blank" rel="noopener"
+              class="btn" style="background:#25d366;color:#fff;font-size:0.8rem;padding:6px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:4px">📱 Abrir no WhatsApp</a>` : ''}
+          </div>
+        </div>
+        ${msg.canal === 'whatsapp' ? `
+        <div style="margin-top:12px;padding:10px 12px;background:#0d1117;border-radius:8px;border:1px solid var(--border)">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:6px">📱 WhatsApp do destinatário</label>
+          <input id="tel-${msg.id}" type="tel" placeholder="Ex: (11) 99999-9999"
+            value="${escHtml(msg._telefone || '')}"
+            style="width:100%;background:#161b27;border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:0.9rem;outline:none"
+            oninput="document.getElementById('tel-${msg.id}').style.borderColor='var(--accent)'" />
+          ${!msg._telefone ? '<small style="color:#f59e0b;margin-top:4px;display:block">⚠ Número não encontrado automaticamente — preencha manualmente</small>' : '<small style="color:#22c55e;margin-top:4px;display:block">✓ Número obtido do Google Places</small>'}
+        </div>` : ''}
       </div>
     </div>
     <div class="card-actions">
@@ -441,6 +814,16 @@ function renderCard(msg) {
       <button class="btn btn-reject" onclick="rejeitar('${msg.id}')">❌ Rejeitar</button>
     </div>
   </div>`;
+}
+
+function copiarMensagem(id, btn) {
+  const msg = messages.find(m => m.id === id);
+  if (!msg) return;
+  navigator.clipboard.writeText(msg.corpo).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => toast('Não foi possível copiar', 'error'));
 }
 
 function toggleEdit(id) {
@@ -479,10 +862,22 @@ async function aprovar(id) {
   card.querySelectorAll('.btn').forEach(b => b.disabled = true);
 
   if (isLive) {
-    const r = await fetch(`${API_BASE}/api/aprovar/${id}`, { method: 'POST' });
+    const telInput = document.getElementById('tel-' + id);
+    const telefone = telInput ? telInput.value.trim() : '';
+
+    const r = await fetch(`${API_BASE}/api/aprovar/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone }),
+    });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
-      toast('Erro: ' + (err.error || 'Falha'), 'error');
+      if (err.error === 'telefone_ausente') {
+        toast('Preencha o número de WhatsApp antes de enviar', 'error');
+        if (telInput) { telInput.style.borderColor = '#ef4444'; telInput.focus(); }
+      } else {
+        toast('Erro: ' + (err.error || 'Falha'), 'error');
+      }
       card.querySelectorAll('.btn').forEach(b => b.disabled = false);
       return;
     }

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics — Conversão por Segmento</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --card:    #21263a;
+      --border:  #2e3348;
+      --text:    #e2e8f0;
+      --muted:   #94a3b8;
+      --accent:  #6366f1;
+      --green:   #22c55e;
+      --yellow:  #f59e0b;
+      --red:     #ef4444;
+      --blue:    #38bdf8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    header nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .85rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: background .15s;
+    }
+    header nav a:hover { background: var(--card); color: var(--text); }
+
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      padding: 20px 28px;
+      flex-wrap: wrap;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      min-width: 150px;
+      flex: 1;
+    }
+    .stat .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .stat .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
+
+    .toolbar {
+      padding: 0 28px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .toolbar input, .toolbar select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-size: .875rem;
+      outline: none;
+    }
+    .toolbar input:focus, .toolbar select:focus { border-color: var(--accent); }
+    .toolbar input { min-width: 220px; }
+
+    .table-wrap {
+      padding: 0 28px 40px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .875rem;
+    }
+    thead th {
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: .72rem;
+      letter-spacing: .06em;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    thead th:hover { color: var(--text); }
+    thead th.sorted-asc::after  { content: ' ▲'; font-size: .65rem; }
+    thead th.sorted-desc::after { content: ' ▼'; font-size: .65rem; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    tbody tr:hover { background: var(--card); }
+    tbody td { padding: 10px 14px; vertical-align: middle; }
+
+    .segment-badge {
+      display: inline-block;
+      background: rgba(99,102,241,.18);
+      color: var(--accent);
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: .8rem;
+      font-weight: 500;
+    }
+
+    .bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bar {
+      height: 6px;
+      border-radius: 3px;
+      min-width: 2px;
+      transition: width .4s;
+    }
+    .bar-resp  { background: var(--blue); }
+    .bar-neg   { background: var(--yellow); }
+    .bar-fech  { background: var(--green); }
+
+    .rate { font-weight: 600; font-size: .85rem; }
+    .rate-high   { color: var(--green); }
+    .rate-medium { color: var(--yellow); }
+    .rate-low    { color: var(--red); }
+
+    .num { color: var(--muted); text-align: right; }
+
+    .empty {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--muted);
+    }
+
+    .funnel-legend {
+      display: flex;
+      gap: 16px;
+      padding: 0 28px 18px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); }
+    .legend-dot  { width: 10px; height: 10px; border-radius: 50%; }
+
+    .refresh-btn {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 16px;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .refresh-btn:hover { opacity: .85; }
+
+    .tag-canal {
+      display: inline-block;
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .tag-wpp  { background: rgba(34,197,94,.15); color: var(--green); }
+    .tag-email{ background: rgba(56,189,248,.15); color: var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📊 Analytics</h1>
+  <nav>
+    <a href="/">Aprovação</a>
+    <a href="/historico">Histórico</a>
+    <a href="/dashboard">Dashboard</a>
+  </nav>
+</header>
+
+<div class="stats-bar" id="stats-bar">
+  <div class="stat"><div class="label">Segmentos</div><div class="value" id="s-segmentos">—</div></div>
+  <div class="stat"><div class="label">Acionados</div><div class="value" id="s-acionados">—</div></div>
+  <div class="stat"><div class="label">Responderam</div><div class="value" id="s-responderam">—</div></div>
+  <div class="stat"><div class="label">Tx. Resposta Global</div><div class="value" id="s-taxa-resp">—</div></div>
+  <div class="stat"><div class="label">Fechamentos</div><div class="value" id="s-fechamentos">—</div></div>
+  <div class="stat"><div class="label">Tx. Fechamento Global</div><div class="value" id="s-taxa-fech">—</div></div>
+</div>
+
+<div class="funnel-legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Taxa de Resposta</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Taxa de Negociação</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Taxa de Fechamento</div>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="search" placeholder="Buscar segmento..." />
+  <select id="filter-min">
+    <option value="0">Todos os tamanhos</option>
+    <option value="3">≥ 3 acionados</option>
+    <option value="5">≥ 5 acionados</option>
+    <option value="10">≥ 10 acionados</option>
+  </select>
+  <select id="sort-col">
+    <option value="acionados">Ordenar: Acionados</option>
+    <option value="taxa_resposta">Ordenar: Tx. Resposta</option>
+    <option value="taxa_negociacao">Ordenar: Tx. Negociação</option>
+    <option value="taxa_fechamento">Ordenar: Tx. Fechamento</option>
+    <option value="segmento">Ordenar: Segmento (A-Z)</option>
+  </select>
+  <button class="refresh-btn" onclick="loadData()">↻ Atualizar</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-col="segmento">Segmento</th>
+        <th data-col="acionados" class="sorted-desc">Acionados</th>
+        <th data-col="responderam">Responderam</th>
+        <th data-col="taxa_resposta">Tx. Resposta</th>
+        <th data-col="negociacao">Negociação</th>
+        <th data-col="taxa_negociacao">Tx. Negociação</th>
+        <th data-col="fechamento">Fechamento</th>
+        <th data-col="taxa_fechamento">Tx. Fechamento</th>
+        <th>Funil Visual</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">Nenhum dado disponível ainda. Execute o pipeline para gerar registros.</div>
+</div>
+
+<script>
+let allData = [];
+let sortCol = 'acionados';
+let sortDir = 'desc';
+
+function parseRate(str) {
+  return parseFloat(str || '0');
+}
+
+async function loadData() {
+  try {
+    const resp = await fetch('/api/analytics/segmentos');
+    allData = await resp.json();
+    updateStats();
+    renderTable();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function updateStats() {
+  const totalAcionados   = allData.reduce((s, r) => s + r.acionados, 0);
+  const totalResponderam = allData.reduce((s, r) => s + r.responderam, 0);
+  const totalFechamentos = allData.reduce((s, r) => s + r.fechamento, 0);
+
+  document.getElementById('s-segmentos').textContent    = allData.length;
+  document.getElementById('s-acionados').textContent    = totalAcionados;
+  document.getElementById('s-responderam').textContent  = totalResponderam;
+  document.getElementById('s-fechamentos').textContent  = totalFechamentos;
+  document.getElementById('s-taxa-resp').textContent    =
+    totalAcionados > 0 ? ((totalResponderam / totalAcionados) * 100).toFixed(1) + '%' : '0%';
+  document.getElementById('s-taxa-fech').textContent    =
+    totalAcionados > 0 ? ((totalFechamentos / totalAcionados) * 100).toFixed(1) + '%' : '0%';
+}
+
+function rateClass(pct) {
+  if (pct >= 15) return 'rate-high';
+  if (pct >=  5) return 'rate-medium';
+  return 'rate-low';
+}
+
+function renderTable() {
+  const q       = document.getElementById('search').value.toLowerCase();
+  const minAc   = parseInt(document.getElementById('filter-min').value) || 0;
+
+  let rows = allData.filter(r =>
+    (!q || r.segmento.toLowerCase().includes(q)) &&
+    r.acionados >= minAc
+  );
+
+  rows.sort((a, b) => {
+    let va = sortCol.startsWith('taxa') ? parseRate(a[sortCol]) : (a[sortCol] ?? 0);
+    let vb = sortCol.startsWith('taxa') ? parseRate(b[sortCol]) : (b[sortCol] ?? 0);
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+  tbody.innerHTML = '';
+
+  if (rows.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const maxAc = Math.max(...rows.map(r => r.acionados), 1);
+
+  for (const r of rows) {
+    const pResp = parseRate(r.taxa_resposta);
+    const pNeg  = parseRate(r.taxa_negociacao);
+    const pFech = parseRate(r.taxa_fechamento);
+    const barW  = Math.max(2, Math.round((r.acionados / maxAc) * 80));
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="segment-badge">${r.segmento || 'Outros'}</span></td>
+      <td class="num" style="font-weight:600">${r.acionados}</td>
+      <td class="num">${r.responderam}</td>
+      <td><span class="rate ${rateClass(pResp)}">${r.taxa_resposta}</span></td>
+      <td class="num">${r.negociacao}</td>
+      <td><span class="rate ${rateClass(pNeg)}">${r.taxa_negociacao}</span></td>
+      <td class="num">${r.fechamento}</td>
+      <td><span class="rate ${rateClass(pFech)}">${r.taxa_fechamento}</span></td>
+      <td>
+        <div class="bar-wrap">
+          <div class="bar bar-resp"  style="width:${Math.max(2,Math.round(pResp*.8))}px" title="Resposta ${r.taxa_resposta}"></div>
+          <div class="bar bar-neg"   style="width:${Math.max(2,Math.round(pNeg*.8))}px"  title="Negociação ${r.taxa_negociacao}"></div>
+          <div class="bar bar-fech"  style="width:${Math.max(2,Math.round(pFech*.8))}px" title="Fechamento ${r.taxa_fechamento}"></div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Update sorted header indicators
+  document.querySelectorAll('thead th').forEach(th => {
+    th.classList.remove('sorted-asc', 'sorted-desc');
+    if (th.dataset.col === sortCol) {
+      th.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+    }
+  });
+}
+
+// Sort on header click
+document.querySelectorAll('thead th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortCol = col;
+      sortDir = col === 'segmento' ? 'asc' : 'desc';
+    }
+    renderTable();
+  });
+});
+
+// Live filter
+['search', 'filter-min', 'sort-col'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (id === 'sort-col') {
+      sortCol = document.getElementById('sort-col').value;
+    }
+    renderTable();
+  });
+});
+
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>

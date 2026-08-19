@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { PipelineState } from '../types';
+import { log } from './logger';
 
 const STATE_FILE = path.join(process.cwd(), 'pipeline_state.json');
 
@@ -22,8 +23,18 @@ export function clearState(): void {
 }
 
 export function markAgentComplete(agentNumber: number): void {
-  const state = loadState();
-  if (!state) return;
+  let state = loadState();
+  if (!state) {
+    log.error(`markAgentComplete: estado ausente ao marcar agente ${agentNumber} — recriando`);
+    state = {
+      data: new Date().toISOString().slice(0, 10),
+      ultimo_agente_concluido: 0,
+      leads_ids: [],
+      em_execucao: true,
+      iniciado_em: new Date().toISOString(),
+      concluido_em: null,
+    };
+  }
   state.ultimo_agente_concluido = agentNumber;
   saveState(state);
 }

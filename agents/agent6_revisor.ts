@@ -56,8 +56,9 @@ async function reviewMessage(msg: Mensagem): Promise<Mensagem> {
   const needsRevision = foundPhrases.length > 0 || !paragraphsOk || !mentionsBiz;
 
   if (!needsRevision) {
-    msg.revisao_score = 95;
-    msg.revisao_notas = 'Mensagem aprovada na revisão automática sem alterações';
+    const paragraphs = countParagraphs(msg.corpo);
+    msg.revisao_score = Math.max(70, 100 - (paragraphs > 3 ? 15 : 0) - (paragraphs > 4 ? 10 : 0));
+    msg.revisao_notas = `Aprovado automaticamente. ${paragraphs} parágrafos. Score: ${msg.revisao_score}/100`;
     msg.status = 'aprovacao_pendente';
     return msg;
   }
@@ -83,11 +84,11 @@ ${msg.corpo}
 
 Reescreva a mensagem corrigindo TODOS os problemas. Regras:
 1. REMOVA todas as frases genéricas de IA listadas
-2. MANTENHA o link da landing page (${msg.landing_page_url})
+2. NÃO adicione links ou URLs — esta é uma mensagem de apresentação; o link é enviado separadamente no dia seguinte
 3. O nome "${msg.nome_negocio}" deve aparecer NATURALMENTE pelo menos 1x
 4. MÁXIMO 3 parágrafos
-5. Tom alinhado com o canal: ${msg.canal}
-6. Mantenha a proposta de valor — apenas reescreva, não mude o conteúdo principal
+5. Tom alinhado com o canal: ${msg.canal} — caloroso, humano, sem linguagem de vendedor
+6. Mantenha o tom de apresentação genuína — apenas reescreva, não mude o conteúdo principal
 
 ${msg.canal === 'email' ? 'Se havia assunto, reescreva também. Retorne JSON: {"assunto": "...", "corpo": "..."}' : 'Retorne apenas o texto reescrito'}`;
 
@@ -118,6 +119,7 @@ ${msg.canal === 'email' ? 'Se havia assunto, reescreva também. Retorne JSON: {"
       100 -
         remainingPhrases.length * 10 -
         (countParagraphs(msg.corpo) > 3 ? 15 : 0) -
+        (countParagraphs(msg.corpo) > 4 ? 10 : 0) -
         (!mentionsBusiness(msg.corpo, msg.nome_negocio) ? 10 : 0)
     );
 

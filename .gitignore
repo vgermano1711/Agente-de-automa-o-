@@ -4,3 +4,13 @@ dist/
 pipeline_state.json
 *.mp4
 videos/tmp/
+
+# Runtime data
+data/*.json
+logs/
+pages/
+.wwebjs_auth/
+.wwebjs_cache/
+.wwebjs_qr.json
+tunnel_url.txt
+run_log*.txt

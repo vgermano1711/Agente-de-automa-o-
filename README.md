@@ -1,152 +1,188 @@
-# Sales Bot — Sistema Multi-Agente de Prospecção e Venda de Landing Pages
+# Sales Automation Bot
 
-Sistema 100% automatizado que prospecta pequenos negócios locais, cria landing pages personalizadas, gera vídeos de prévia e envia a abordagem por **WhatsApp** — o canal com maior taxa de abertura no Brasil. Você só aprova antes do envio.
+> **Pipeline multi-agente de IA que prospecta, diagnostica e vende landing pages — do Google Maps ao WhatsApp, sem intervenção humana.**
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white"/>
+  <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Claude_AI-Anthropic-D97706?style=for-the-badge&logo=anthropic&logoColor=white"/>
+  <img src="https://img.shields.io/badge/WhatsApp-API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Gmail-OAuth_2.0-EA4335?style=for-the-badge&logo=gmail&logoColor=white"/>
+  <img src="https://img.shields.io/badge/PM2-Auto--start-2B037A?style=for-the-badge&logo=pm2&logoColor=white"/>
+</p>
+
+---
 
 ## Como funciona
 
-```
-Agente 1 → Prospecta negócios via Google Places (sem site ou site antigo)
-Agente 2 → Diagnostica cada lead e define ângulo de venda
-Agente 3 → Gera landing page HTML personalizada e faz deploy no Netlify
-Agente 4 → Cria vídeo de prévia mobile (Puppeteer + ffmpeg)
-Agente 5 → Gera mensagem WhatsApp personalizada via Claude
-Agente 6 → Revisa e remove linguagem genérica de IA
-Agente 7 → Monitora Gmail 24/7 e responde leads (com aprovação sua)
-```
+O sistema roda automaticamente todos os dias às 08h. O único passo manual é **aprovar ou rejeitar** no painel antes do envio.
 
-O ciclo roda automaticamente todo dia às 08:00. Você só aprova antes do envio.
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    SALES AUTOMATION BOT                             │
+│              Pipeline de 7 Agentes com Claude AI                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+  Google Maps
+      │
+      ▼
+  ╔═══════════╗   Busca empresas por setor e cidade
+  ║ AGENTE 1  ║   Filtra por avaliações e potencial de venda
+  ║ Prospector║   Score de prioridade com IA
+  ╚═════╤═════╝
+        │ leads.json
+        ▼
+  ╔═══════════╗   Analisa o negócio com Claude AI
+  ║ AGENTE 2  ║   Identifica pontos fracos e oportunidades
+  ║Diagnóstico║   Calcula score de 0–100
+  ╚═════╤═════╝
+        │ diagnosticos.json
+        ▼
+  ╔═══════════╗   Gera landing page HTML personalizada
+  ║ AGENTE 3  ║   Baseada no diagnóstico do negócio
+  ║  Builder  ║   Deploy automático via Surge.sh
+  ╚═════╤═════╝
+        │ pages/{slug}/index.html
+        ▼
+  ╔═══════════╗   Cria vídeo de apresentação da página
+  ║ AGENTE 4  ║   Captura mobile com Puppeteer
+  ║   Vídeo   ║
+  ╚═════╤═════╝
+        │
+        ▼
+  ╔═══════════╗   Gera mensagem de prospecção personalizada
+  ║ AGENTE 5  ║   Referencia o diagnóstico e a landing page
+  ║   Canal   ║   Adapta tom por setor
+  ╚═════╤═════╝
+        │ mensagens.json
+        ▼
+  ╔═══════════╗   Revisa a mensagem com IA
+  ║ AGENTE 6  ║   Remove frases genéricas de IA
+  ║  Revisor  ║   Score de qualidade — reescreve se < 80
+  ╚═════╤═════╝
+        │ mensagem aprovada
+        ▼
+  ┌──────────────────────────────────────┐
+  │         PAINEL DE APROVAÇÃO          │  ← único passo manual
+  │  - Preview da landing page gerada    │
+  │  - Telefone e nome do lead           │
+  │  - Score de qualidade da mensagem    │
+  │  - Histórico de enviados             │
+  └─────────────────┬────────────────────┘
+                    │ aprovado
+                    ▼
+  ╔═══════════╗   Envia via WhatsApp ou Gmail
+  ║ AGENTE 7  ║   Monitora respostas 24/7
+  ║  Handler  ║   Responde leads com IA automaticamente
+  ╚═══════════╝
+```
 
 ---
 
-## Setup
+## Stack
 
-### 1. Pré-requisitos
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | TypeScript / Node.js 18+ |
+| IA | Anthropic Claude API |
+| Prospecção | Google Places API |
+| WhatsApp | whatsapp-web.js |
+| Email | Gmail API (OAuth 2.0) |
+| Landing Pages | HTML gerado por IA + Surge.sh |
+| Screenshots | Puppeteer |
+| Servidor | Express.js |
+| Processos | PM2 (auto-restart + boot) |
+| Agendamento | node-cron |
 
-- Node.js 18+
-- ffmpeg: `brew install ffmpeg` (Mac) ou `apt install ffmpeg` (Linux)
-- PM2 (produção): `npm install -g pm2`
-- Conta Netlify free tier (para deploy das landing pages)
+---
 
-### 2. Instalar e configurar
+## Estrutura
 
-```bash
-git clone https://github.com/vgermano1711/agente-de-automa-o-
-cd agente-de-automa-o-
-node setup.js
+```
+sales-automation/
+├── agents/
+│   ├── agent1_prospector.ts    # Google Maps → leads
+│   ├── agent2_diagnostico.ts   # Claude AI → diagnóstico + score
+│   ├── agent3_builder.ts       # HTML personalizado + deploy
+│   ├── agent4_video.ts         # captura de vídeo mobile
+│   ├── agent5_canal.ts         # mensagem de prospecção
+│   ├── agent6_revisor.ts       # revisão de qualidade
+│   └── agent7_handler.ts       # respostas automáticas
+├── api/
+│   └── server.ts               # Express API na porta 3000
+├── aprovacao.html              # painel de aprovação
+├── orchestrator.ts             # coordena os agentes (cron diário)
+├── ecosystem.config.js         # configuração PM2
+├── gerar-oauth.ts              # setup Gmail OAuth automático
+├── start-api.js                # wrapper PM2 para API
+└── start-orchestrator.js       # wrapper PM2 para orchestrator
 ```
 
-O script `setup.js` pergunta cada chave, valida e escreve o `.env` automaticamente.
+---
 
-### 3. Configurar WhatsApp (escolha uma opção)
+## Instalação
 
-**Opção A — Z-API** (recomendado para produção, a partir de R$97/mês):
-1. Crie conta em [app.z-api.io](https://app.z-api.io)
-2. Crie uma instância e conecte seu WhatsApp escaneando o QR
-3. Copie o `Instance ID` e `Token` para o `.env`
-
-**Opção B — whatsapp-web.js** (gratuito, requer celular conectado):
-1. No `.env`, mude `WHATSAPP_PROVIDER=wwebjs`
-2. Na primeira execução, um QR code aparece no terminal
-3. Escaneie com o WhatsApp do celular que vai enviar as mensagens
-
-### 4. Executar
-
-**Produção (recomendado):**
+### 1. Clonar e instalar
 ```bash
-npm run build
+git clone https://github.com/vgermano1711/agente-de-automacao.git
+cd agente-de-automacao
+npm install
+```
+
+### 2. Configurar `.env`
+```env
+ANTHROPIC_API_KEY=...
+GOOGLE_PLACES_API_KEY=...
+OWNER_WHATSAPP=5511999999999
+WHATSAPP_PROVIDER=wwebjs
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REFRESH_TOKEN=...
+```
+
+### 3. Configurar Gmail OAuth
+```bash
+npx ts-node gerar-oauth.ts
+```
+Abre o browser, você autoriza, o token é salvo automaticamente.
+
+### 4. Iniciar com PM2
+```bash
 pm2 start ecosystem.config.js
+pm2 save
 ```
 
-**Rodar agora para testar:**
-```bash
-npm run run-now
+### 5. Acessar o painel
 ```
-
-**Desenvolvimento com logs ao vivo:**
-```bash
-npm run dev          # orchestrator
-npm run dev:api      # servidor web (outro terminal)
+http://localhost:3000
 ```
 
 ---
 
-## Aprovar mensagens
+## Painel de Aprovação
 
-Acesse o painel em: **http://localhost:3000**
+O painel web permite:
 
-Para cada mensagem pendente:
-- ✅ **Aprovar e Enviar WhatsApp** — envia imediatamente
-- ✏️ **Editar** — edita o texto antes de aprovar
-- ❌ **Rejeitar** — descarta
+- Pesquisar leads por setor e cidade em tempo real
+- Visualizar diagnóstico e score do lead
+- Preview da landing page gerada (iframe local)
+- Aprovar/rejeitar com um clique
+- Campo de telefone com validação
+- Histórico de mensagens enviadas
+- Auto-redirect para aprovações após prospectar
 
 ---
 
-## Monitorar com PM2
+## Monitorar
 
 ```bash
-pm2 status          # processos rodando
-pm2 logs            # logs em tempo real
-pm2 monit           # painel interativo
-pm2 restart all     # reiniciar
-pm2 stop all        # parar tudo
+pm2 status       # processos rodando
+pm2 logs         # logs em tempo real
+pm2 monit        # painel interativo
 ```
 
 ---
 
-## Estrutura de pastas
+## Licença
 
-```
-├── agents/             # 7 agentes independentes
-├── api/server.ts       # Servidor Express + endpoints REST
-├── utils/
-│   ├── whatsapp.ts     # Envio WhatsApp (Z-API + whatsapp-web.js)
-│   ├── logger.ts
-│   ├── notifications.ts
-│   ├── state.ts
-│   └── dataHelpers.ts
-├── data/               # JSONs gerados diariamente
-├── pages/              # Landing pages geradas
-├── logs/               # Logs e relatórios diários
-├── aprovacao.html      # Painel web de aprovação
-├── orchestrator.ts     # Orquestrador central (cron + retry + state)
-├── types.ts            # Tipos TypeScript compartilhados
-├── config.json         # Configuração editável
-├── ecosystem.config.js # Configuração PM2
-├── setup.js            # Setup interativo
-└── .env.example        # Template de variáveis de ambiente
-```
-
----
-
-## Variáveis de Ambiente
-
-| Variável | Onde Obter | Obrigatória |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com/settings/keys) | **Sim** |
-| `WHATSAPP_PROVIDER` | `zapi` ou `wwebjs` | **Sim** |
-| `ZAPI_INSTANCE_ID` | [app.z-api.io](https://app.z-api.io) | Se usar Z-API |
-| `ZAPI_TOKEN` | app.z-api.io | Se usar Z-API |
-| `GOOGLE_PLACES_API_KEY` | Google Cloud Console → Places API | Para leads reais |
-| `NETLIFY_AUTH_TOKEN` | app.netlify.com → User settings | Para deploy |
-| `PUSHOVER_TOKEN` | [pushover.net](https://pushover.net) | Para notificações |
-| `OWNER_EMAIL` | Seu email | Sim |
-
----
-
-## Configuração (config.json)
-
-```json
-{
-  "cidades_alvo": ["São Paulo, SP", "Campinas, SP"],
-  "segmentos": ["salão de beleza", "barbearia"],
-  "leads_por_dia": 5,
-  "horario_ciclo": "0 8 * * *",
-  "canal_padrao": "whatsapp"
-}
-```
-
----
-
-## Desenvolvimento sem APIs externas
-
-Sem `GOOGLE_PLACES_API_KEY`, o sistema usa dados mock. Sem `ZAPI_*`, simula o envio no terminal. Ideal para testar o fluxo completo antes de configurar as integrações reais.
+MIT

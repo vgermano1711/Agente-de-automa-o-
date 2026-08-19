@@ -9,7 +9,10 @@ import { runAgent3 } from './agents/agent3_builder';
 import { runAgent4 } from './agents/agent4_video';
 import { runAgent5 } from './agents/agent5_canal';
 import { runAgent6 } from './agents/agent6_revisor';
+import { runAgent8 } from './agents/agent8_autosend';
 import { startAgent7Loop } from './agents/agent7_handler';
+import { processarCadencias, enviarResumoDiario, enviarRelatorioSemanal } from './agents/cadencia';
+import { processarFollowups } from './agents/agent_followup';
 import { initWhatsappWeb } from './utils/whatsapp';
 
 import { log } from './utils/logger';
@@ -113,12 +116,19 @@ async function runDailyCycle(): Promise<void> {
   // Verificar se já está rodando
   let state = loadState();
   if (state?.em_execucao && state.data === today) {
-    log.warn('Pipeline já está em execução. Abortando inicialização duplicada.');
-    return;
+    const startedAt = state.iniciado_em ? new Date(state.iniciado_em).getTime() : 0;
+    const hoursElapsed = (Date.now() - startedAt) / (1000 * 60 * 60);
+    if (hoursElapsed < 4) {
+      log.warn('Pipeline já está em execução. Abortando inicialização duplicada.');
+      return;
+    }
+    log.warn(`♻️  Pipeline travado há ${hoursElapsed.toFixed(1)}h — resetando e retomando`);
   }
 
-  // Verificar retomada de crash
-  const ultimoAgente = state?.data === today ? state.ultimo_agente_concluido : 0;
+  // Crash recovery: só retoma se o pipeline anterior travou (em_execucao=true indica crash)
+  // Se completou normalmente (em_execucao=false), começa do zero
+  const crashedMidRun = state?.data === today && state?.em_execucao === true;
+  const ultimoAgente = crashedMidRun ? state!.ultimo_agente_concluido : 0;
   if (ultimoAgente > 0) {
     log.info(`♻️  Retomando do Agente ${ultimoAgente + 1} (crash recovery)`);
   }
@@ -143,6 +153,7 @@ async function runDailyCycle(): Promise<void> {
     { number: 4, name: 'Agente 4 — Vídeo', fn: runAgent4 },
     { number: 5, name: 'Agente 5 — Canal', fn: runAgent5 },
     { number: 6, name: 'Agente 6 — Revisor', fn: runAgent6 },
+    { number: 8, name: 'Agente 8 — Auto-Envio', fn: runAgent8 },
   ];
 
   for (const agent of agents) {
@@ -177,10 +188,9 @@ async function runDailyCycle(): Promise<void> {
 
   await generateDailyReport(startTime, errors);
 
-  const panelUrl = process.env.APPROVAL_PANEL_URL || 'http://localhost:3000';
   await notifyOwner(
-    `✅ Pipeline concluído!\n\nMensagens aguardando sua aprovação.\nAcesse: ${panelUrl}`,
-    'Pipeline Concluído'
+    `✅ Pipeline do dia concluído!\nMensagens enviadas automaticamente.\nAcompanhe as respostas — você será notificado assim que algum lead responder.`,
+    '🏁 Pipeline Concluído'
   );
 
   log.success(`🏁 Ciclo diário concluído em ${Math.round((Date.now() - startTime) / 60000)}min`);
@@ -207,22 +217,59 @@ async function initWhatsApp(): Promise<void> {
   }
 }
 
-// Agente 7 roda em paralelo, continuamente
-startAgent7Loop({ intervalMinutes: config.intervalo_agent7_minutos || 5 });
+// Agendamento automático via cron — um por dia da semana com horário otimizado
+const agendaSemanal: Record<string, { segmentos: string[]; horario: string } | string[]> | undefined = config.agenda_semanal;
+const cronScheduleGlobal = process.env.CRON_SCHEDULE;
 
-// Agendamento automático via cron
-const cronSchedule = process.env.CRON_SCHEDULE || config.horario_ciclo || '0 8 * * *';
-log.info(`⏰ Pipeline agendado: "${cronSchedule}" (padrão: 08:00 todos os dias)`);
-
-// Inicialização principal — WhatsApp primeiro, depois cron
-(async () => {
-  await initWhatsApp();
-
-  cron.schedule(cronSchedule, () => {
-    runDailyCycle().catch((err) => {
-      log.error(`Ciclo diário falhou: ${err.message}`);
-    });
+// Cadência + follow-ups — todo dia útil às 10h
+cron.schedule('0 10 * * 1-5', () => {
+  processarCadencias().catch((err: Error) => {
+    log.error(`Cadência — erro ao processar: ${err.message}`);
   });
+  processarFollowups().catch((err: Error) => {
+    log.error(`Follow-ups — erro ao processar: ${err.message}`);
+  });
+});
+log.info('⏰ Cadência agendada: 10:00 dias úteis');
+
+// Resumo diário de leads quentes → WhatsApp do Victor às 17h (dias úteis)
+cron.schedule('0 17 * * 1-5', () => {
+  enviarResumoDiario().catch((err: Error) => {
+    log.error(`Resumo diário — erro: ${err.message}`);
+  });
+});
+log.info('⏰ Resumo de leads quentes agendado: 17:00 dias úteis');
+
+// Relatório semanal — toda sexta-feira às 18h
+cron.schedule('0 18 * * 5', () => {
+  enviarRelatorioSemanal().catch((err: Error) => {
+    log.error(`Relatório semanal — erro: ${err.message}`);
+  });
+});
+log.info('⏰ Relatório semanal agendado: sextas-feiras às 18:00');
+
+// Inicialização principal — a API gerencia o WhatsApp; orchestrator nunca inicializa
+(async () => {
+  // Agente 7 só inicia após o WhatsApp estar pronto para não perder mensagens
+  startAgent7Loop({ intervalMinutes: config.intervalo_agent7_minutos || 5 });
+
+  if (cronScheduleGlobal) {
+    // Override manual via variável de ambiente
+    cron.schedule(cronScheduleGlobal, () => runDailyCycle().catch((err) => log.error(`Ciclo falhou: ${err.message}`)));
+    log.info(`⏰ Pipeline agendado (override): "${cronScheduleGlobal}"`);
+  } else if (agendaSemanal) {
+    // Um cron por dia com horário otimizado por segmento
+    const nomes: Record<string, string> = { '1':'Seg','2':'Ter','3':'Qua','4':'Qui','5':'Sex' };
+    Object.entries(agendaSemanal).forEach(([dia, entrada]) => {
+      const horarioCron = Array.isArray(entrada) ? `0 8 * * ${dia}` : entrada.horario;
+      cron.schedule(horarioCron, () => runDailyCycle().catch((err) => log.error(`Ciclo ${nomes[dia]} falhou: ${err.message}`)));
+      log.info(`⏰ Pipeline agendado: ${nomes[dia]} às ${horarioCron.split(' ').slice(0,2).reverse().map((v,i)=>i===0?v.padStart(2,'0')+'h':v.padStart(2,'0')+'min').join('')} (${horarioCron})`);
+    });
+  } else {
+    // Fallback: todos os dias úteis às 8h
+    cron.schedule('0 8 * * 1-5', () => runDailyCycle().catch((err) => log.error(`Ciclo falhou: ${err.message}`)));
+    log.info('⏰ Pipeline agendado: 08:00 dias úteis (fallback)');
+  }
 
   if (process.argv.includes('--run-now')) {
     log.info('Executando imediatamente via --run-now');
@@ -230,7 +277,7 @@ log.info(`⏰ Pipeline agendado: "${cronSchedule}" (padrão: 08:00 todos os dias
       log.error(`Execução manual falhou: ${err.message}`);
       process.exit(1);
     });
+  } else {
+    log.info('🤖 Sales Bot iniciado e aguardando próximo ciclo agendado');
   }
-
-  log.info('🤖 Sales Bot iniciado e aguardando próximo ciclo agendado');
 })();
