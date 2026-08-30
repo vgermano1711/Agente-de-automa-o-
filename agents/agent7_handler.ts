@@ -14,7 +14,7 @@ import { log } from '../utils/logger';
 import { readJson, writeJson, generateId } from '../utils/dataHelpers';
 import { notifyOwner } from '../utils/notifications';
 import { registrarNaCadencia } from './cadencia';
-import { isNaBlacklist, randomShortDelay } from '../utils/antiSpam';
+import { isNaBlacklist, randomShortDelay, envioPausado } from '../utils/antiSpam';
 import { obterOuCriarCobrancaPendente } from '../utils/cobranca';
 
 const client = new Anthropic();
@@ -1043,6 +1043,12 @@ async function enviarRelatorioMatinal(): Promise<void> {
 const PROBE_MAX_ENVIOS_POR_CICLO = 5;
 
 async function processProbeQueue(): Promise<void> {
+  // ── Kill-switch global de envios ─────────────────────────────────────────
+  if (envioPausado()) {
+    log.info('⏸ Agent7 fila probe — ENVIOS PAUSADOS (data/envio_pausado.txt). Apresentações retidas.');
+    return;
+  }
+
   const queue = readJson<ProbeQueueEntry[]>(PROBE_QUEUE_FILE) || [];
   if (queue.length === 0) return;
 

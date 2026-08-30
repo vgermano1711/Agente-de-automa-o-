@@ -19,7 +19,7 @@ import { Mensagem, Diagnostico } from '../types';
 import { log } from '../utils/logger';
 import { notifyOwner } from '../utils/notifications';
 import { dataPath, readJson, writeJson, today, generateId } from '../utils/dataHelpers';
-import { isNaBlacklist, randomDelay, emailProspeccaoPausada } from '../utils/antiSpam';
+import { isNaBlacklist, randomDelay, emailProspeccaoPausada, envioPausado } from '../utils/antiSpam';
 import { registrarNaCadencia } from './cadencia';
 
 const PROBE_QUEUE_FILE         = path.join(process.cwd(), 'data', 'probe_queue.json');
@@ -410,6 +410,12 @@ function canAutoSend(msg: Mensagem, telefone: string): { ok: boolean; motivo?: s
 
 export async function runAgent8(): Promise<void> {
   log.info('Agente 8 — Auto-Envio iniciado');
+
+  // ── Kill-switch global de envios ─────────────────────────────────────────
+  if (envioPausado()) {
+    log.info('⏸ Agent 8 — ENVIOS PAUSADOS (data/envio_pausado.txt existe ou ENVIO_PAUSADO=true). Nenhuma mensagem será enviada.');
+    return;
+  }
 
   // Constrói histórico retroativo se for a primeira execução
   await construirHistoricoRetroativo();

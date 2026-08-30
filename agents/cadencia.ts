@@ -21,7 +21,7 @@ import { CadenciaLead, FollowUpEntry, Diagnostico, Mensagem } from '../types';
 import { isBotNumber } from './agent9_whatsapp_reply';
 import { log } from '../utils/logger';
 import { readJson, writeJson, today } from '../utils/dataHelpers';
-import { isNaBlacklist, randomDelay, emailProspeccaoPausada } from '../utils/antiSpam';
+import { isNaBlacklist, randomDelay, emailProspeccaoPausada, envioPausado } from '../utils/antiSpam';
 
 async function sendWhatsAppViaCadencia(phone: string, message: string): Promise<boolean> {
   const apiPort = process.env.PORT || '3000';
@@ -278,6 +278,12 @@ function temConversaAtiva(telefone: string): boolean {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function processarCadencias(): Promise<void> {
   log.info('Cadência — verificando follow-ups do dia...');
+
+  // ── Kill-switch global de envios ─────────────────────────────────────────
+  if (envioPausado()) {
+    log.info('⏸ Cadência — ENVIOS PAUSADOS (data/envio_pausado.txt). Follow-ups retidos para quando retomar.');
+    return;
+  }
 
   const cadencias = loadCadencias();
   const pendentes = cadencias.filter(c =>

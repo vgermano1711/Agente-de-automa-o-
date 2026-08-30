@@ -5,11 +5,24 @@
  * Extraído pra módulo próprio pra evitar import circular entre esses agentes.
  */
 
+import fs from 'fs';
 import path from 'path';
 import { readJson } from './dataHelpers';
 import { log } from './logger';
 
-const BLACKLIST_FILE = path.join(process.cwd(), 'data', 'blacklist.json');
+const BLACKLIST_FILE   = path.join(process.cwd(), 'data', 'blacklist.json');
+const PAUSE_FILE       = path.join(process.cwd(), 'data', 'envio_pausado.txt');
+
+/**
+ * Kill-switch global — para TODOS os envios de WhatsApp de prospecção/follow-up
+ * (Agente 7, Agente 8 e Cadência). Ativa via arquivo data/envio_pausado.txt
+ * (basta o arquivo existir) ou pela variável de ambiente ENVIO_PAUSADO=true.
+ * Para retomar: apague o arquivo ou remova a variável de ambiente.
+ */
+export function envioPausado(): boolean {
+  if (process.env.ENVIO_PAUSADO === 'true') return true;
+  return fs.existsSync(PAUSE_FILE);
+}
 
 /**
  * Kill-switch manual pro canal de e-mail de prospecção/acionamento (Agente 8 e
