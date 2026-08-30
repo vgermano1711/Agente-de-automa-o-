@@ -299,6 +299,17 @@
 
 <header>
   <div class="logo">🤖 Sales Bot</div>
+  <div id="kill-switch-area" style="display:flex;align-items:center;gap:10px;">
+    <span id="kill-status-badge" style="font-size:0.78rem;font-weight:700;padding:4px 10px;border-radius:20px;background:#e53e3e;color:#fff;display:none">⏸ ENVIOS PAUSADOS</span>
+    <button id="btn-pausar" onclick="controlarEnvios('pausar')"
+      style="background:#e53e3e;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;display:none">
+      ⏸ Pausar Envios
+    </button>
+    <button id="btn-retomar" onclick="controlarEnvios('retomar')"
+      style="background:#38a169;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;display:none">
+      ▶ Retomar Envios
+    </button>
+  </div>
   <div id="status-area">
     <span class="status-dot dot-demo" id="status-dot"></span>
     <span id="status-text">Modo demo</span>
@@ -999,13 +1010,51 @@ async function updateStats() {
   } catch {}
 }
 
+// ─── Kill-switch de envios ────────────────────────────────────────────────────
+async function atualizarStatusEnvios() {
+  if (!IS_LIVE) return;
+  try {
+    const r = await fetch('/api/controle/status-envios');
+    if (!r.ok) return;
+    const { pausado } = await r.json();
+    const badge   = document.getElementById('kill-status-badge');
+    const btnP    = document.getElementById('btn-pausar');
+    const btnR    = document.getElementById('btn-retomar');
+    badge.style.display  = pausado ? 'inline-block' : 'none';
+    btnP.style.display   = pausado ? 'none' : 'inline-block';
+    btnR.style.display   = pausado ? 'inline-block' : 'none';
+  } catch {}
+}
+
+async function controlarEnvios(acao) {
+  const url = acao === 'pausar'
+    ? '/api/controle/pausar-envios'
+    : '/api/controle/retomar-envios';
+  const label = acao === 'pausar' ? 'Pausar' : 'Retomar';
+  if (!confirm(`Confirmar: ${label} todos os envios automáticos?`)) return;
+  try {
+    const r = await fetch(url, { method: 'POST' });
+    const data = await r.json();
+    if (data.success) {
+      alert(`✅ ${data.mensagem}`);
+      await atualizarStatusEnvios();
+    } else {
+      alert('Erro: ' + (data.error || 'desconhecido'));
+    }
+  } catch (e) {
+    alert('Falha na requisição: ' + e.message);
+  }
+}
+
 // ─── Init ────────────────────────────────────────────────────────────────────
 (async () => {
   await detectMode();
   await loadMessages();
   updateStats();
+  await atualizarStatusEnvios();
   setInterval(updateStats, 30000);
   setInterval(loadMessages, 120000);
+  setInterval(atualizarStatusEnvios, 15000);
 })();
 </script>
 </body>

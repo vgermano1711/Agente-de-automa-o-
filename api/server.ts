@@ -1205,6 +1205,38 @@ function normalizePhone(p: string): string {
   return p.replace(/\D/g, '').replace(/^55/, '');
 }
 
+// ── Kill-switch global de envios ──────────────────────────────────────────────
+const PAUSE_FILE = path.join(process.cwd(), 'data', 'envio_pausado.txt');
+
+// GET /api/controle/status-envios — retorna se os envios estão pausados
+app.get('/api/controle/status-envios', (_req, res) => {
+  const pausado = fs.existsSync(PAUSE_FILE);
+  res.json({ pausado, arquivo: PAUSE_FILE });
+});
+
+// POST /api/controle/pausar-envios — cria o arquivo de pausa (sem reiniciar)
+app.post('/api/controle/pausar-envios', (_req, res) => {
+  try {
+    fs.writeFileSync(
+      PAUSE_FILE,
+      `Envios pausados em ${new Date().toISOString()} via painel de controle.\n`
+    );
+    res.json({ success: true, pausado: true, mensagem: 'Envios pausados. Agente 7, 8 e Cadência vão ignorar próximos ciclos.' });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// POST /api/controle/retomar-envios — remove o arquivo de pausa (sem reiniciar)
+app.post('/api/controle/retomar-envios', (_req, res) => {
+  try {
+    if (fs.existsSync(PAUSE_FILE)) fs.unlinkSync(PAUSE_FILE);
+    res.json({ success: true, pausado: false, mensagem: 'Envios retomados. Próximo ciclo agendado vai disparar normalmente.' });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 // GET /api/blacklist — lista números na blacklist
 app.get('/api/blacklist', (_req, res) => res.json(readBlacklist()));
 
